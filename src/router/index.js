@@ -26,6 +26,11 @@ const routes = [
 		name: "AddSong",
 		component: () => import("../views/AddSong.vue"),
 	},
+	{
+		path: "/song/:id",
+		name: "SongSheet",
+		component: () => import("../views/SingleSong.vue"),
+	},
 ];
 
 const router = new VueRouter({

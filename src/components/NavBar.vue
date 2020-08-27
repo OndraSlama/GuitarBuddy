@@ -1,17 +1,7 @@
 <template>
   <div>
-    <v-navigation-drawer
-      v-model="drawerOpened"
-      :permanent="size.lgAndUp"
-      :temporary="size.xs"
-      app
-      overflow
-      clipped
-      width="350"
-    >Tady bude seznam písniček</v-navigation-drawer>
-
     <v-app-bar clipped-left flat app :hide-on-scroll="size.smAndDown">
-      <v-app-bar-nav-icon class="hidden-lg-and-up" @click.stop="drawerOpened = !drawerOpened"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon class="hidden-lg-and-up" @click.stop="toggleSongList()"></v-app-bar-nav-icon>
 
       <v-toolbar-title class="hidden-sm-and-down">@hordeon</v-toolbar-title>
       <v-spacer></v-spacer>
@@ -71,7 +61,6 @@
 export default {
   data() {
     return {
-      drawerOpened: false,
       routes: [
         { name: "Home", link: "/", icon: "mdi-home-outline" },
         {
@@ -90,6 +79,9 @@ export default {
   methods: {
     login() {
       console.log("logging in");
+    },
+    toggleSongList() {
+      this.$store.commit("toggleSongListOpened");
     },
   },
   computed: {
