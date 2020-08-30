@@ -1,26 +1,27 @@
 <template>
 	<div>
-		<v-navigation-drawer v-model="opened" :permanent="size.lgAndUp" :temporary="size.xs" app overflow clipped width="350">
+		<v-navigation-drawer v-if="userLogged" v-model="opened" :permanent="drawerPermanent" :temporary="size.xs" app overflow clipped width="350">
 			<!-- <div v-for="song in songs" :key="song.id" class="ma-3">
 				<span>{{ song.title }}</span> <v-btn :to="'/song/' + song.id">Go to song</v-btn>
 			</div> -->
 
 			<v-list two-line subheader>
+				<v-list-item><v-text-field v-model="filters.search" dense class="ma-1 mt-3" flat hide-details append-icon="mdi-magnify" outlined></v-text-field></v-list-item>
 				<v-subheader>Collection</v-subheader>
-				<v-list-item v-for="song in songs" :key="song.id" router :to="'/song/' + song.id">
-					<!-- <v-list-item-action>
-						<v-icon class="white--text">{{ link.icon }}</v-icon>
-					</v-list-item-action> -->
-					<v-list-item-content>
-						<v-list-item-title>{{ song.title }}</v-list-item-title>
-						<v-list-item-subtitle>{{ song.author }}</v-list-item-subtitle>
-					</v-list-item-content>
-					<v-list-item-action>
-						<v-btn small icon @click="deleteSong(song.id)">
-							<v-icon>mdi-delete</v-icon>
-						</v-btn>
-					</v-list-item-action>
-				</v-list-item>
+				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"> </v-skeleton-loader>
+				<v-scroll-x-transition group>
+					<v-list-item v-for="song in filteredSongs(filters)" :key="song.id" router :to="'/song/' + song.id">
+						<v-list-item-content>
+							<v-list-item-title>{{ song.title }}</v-list-item-title>
+							<v-list-item-subtitle>{{ song.author }}</v-list-item-subtitle>
+						</v-list-item-content>
+						<v-list-item-action>
+							<v-btn small icon @click.stop.prevent="" :to="'/edit-song/' + song.id">
+								<v-icon>mdi-pencil-outline</v-icon>
+							</v-btn>
+						</v-list-item-action>
+					</v-list-item>
+				</v-scroll-x-transition>
 			</v-list>
 		</v-navigation-drawer>
 	</div>
@@ -30,21 +31,28 @@
 import { mapGetters } from "vuex";
 export default {
 	data() {
-		return {};
+		return {
+			filters: {
+				search: "",
+			},
+		};
 	},
 	methods: {
-		deleteSong(id) {
-			this.$store.commit("deleteSong", id);
-		},
+		// editSong(id) {
+		// 	this.$router.push();
+		// 	// this.$store.commit("deleteSong", id);
+		// },
 	},
 	computed: {
 		size() {
-			console.log(this.$vuetify.breakpoint.name);
 			return this.$vuetify.breakpoint;
+		},
+		drawerPermanent() {
+			return this.size.lgAndUp && this.userLogged;
 		},
 		opened: {
 			get() {
-				return this.openedStore;
+				return this.openedStore && this.userLogged;
 			},
 			set(val) {
 				this.$store.commit("setSongListOpened", val);
@@ -52,7 +60,11 @@ export default {
 		},
 
 		...mapGetters({
+			userLogged: "getUserLogged",
+			openedStore: "getSongListOpened",
 			songs: "getSongs",
+			filteredSongs: "getFilteredSongs",
+			songListLoading: "getSongListLoading",
 		}),
 	},
 };

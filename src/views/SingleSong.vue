@@ -1,15 +1,20 @@
 <template>
 	<div>
-		<song-sheet :song="song"></song-sheet>
+		<v-skeleton-loader v-show="songListLoading" type="article"> </v-skeleton-loader>
+		<v-scroll-x-transition>
+			<song-sheet v-if="!songListLoading && !transitioning" :song="song"></song-sheet>
+		</v-scroll-x-transition>
 	</div>
 </template>
 
 <script>
 import SongSheet from "../components/SongSheet";
 
+import { mapGetters } from "vuex";
+
 export default {
 	data() {
-		return {};
+		return { transitioning: false };
 	},
 
 	computed: {
@@ -20,10 +25,27 @@ export default {
 		song() {
 			return this.$store.getters.getSong(this.id);
 		},
+
+		songValid() {
+			return this.song != undefined || this.song != null;
+		},
+
+		...mapGetters({
+			songListLoading: "getSongListLoading",
+		}),
 	},
 
 	components: {
 		"song-sheet": SongSheet,
+	},
+
+	watch: {
+		"$route.params.id": function() {
+			this.transitioning = true;
+			setTimeout(() => {
+				this.transitioning = false;
+			}, 80);
+		},
 	},
 };
 </script>

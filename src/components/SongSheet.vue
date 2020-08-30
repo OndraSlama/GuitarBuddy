@@ -1,30 +1,44 @@
 <template>
-	<div class="mt-xs-4 pl-xs-0">
-		<v-row align-content="center">
+	<v-sheet class="mt-xs-4 px-7 py-8 elevation-4">
+		<v-row v-if="songValid">
 			<v-col>
 				<p class="subtitle text--primary">{{ song.author }}</p>
 				<p class="display-2 text--primary">{{ song.title }}</p>
 			</v-col>
-			<v-spacer></v-spacer>
+			<v-spacer v-for="n in 10" :key="n"></v-spacer>
 
 			<v-col class="text-start" align-self="center">
 				<v-btn-toggle v-model="multipleColumns" rounded mandatory>
-					<v-btn @click="dynamicSectionFontSize = maxFontSize">
-						<span>Column</span>
-					</v-btn>
-					<v-btn @click="dynamicSectionFontSize = maxFontSize">
-						<span>Dynamic</span>
-					</v-btn>
+					<v-tooltip top>
+						<template v-slot:activator="{ on, attrs }">
+							<v-btn @click="dynamicSectionFontSize = maxFontSize" v-bind="attrs" v-on="on">
+								<v-icon>mdi-table-column</v-icon>
+								<!-- <span>Column</span> -->
+							</v-btn>
+						</template>
+						<span>Lyrics in one long column</span>
+					</v-tooltip>
+
+					<v-tooltip top>
+						<template v-slot:activator="{ on, attrs }">
+							<v-btn icon @click="dynamicSectionFontSize = maxFontSize" v-bind="attrs" v-on="on">
+								<v-icon>mdi-view-dashboard-outline</v-icon>
+								<!-- <span>Dynamic</span> -->
+							</v-btn>
+						</template>
+						<span>Dynamically adjusted lyrics size and position to fit the screen</span>
+					</v-tooltip>
 				</v-btn-toggle>
 			</v-col>
 		</v-row>
-		<div :v-show="song.lines.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
+		<div v-if="songValid && song.lines.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
 			<div :class="['mb-5 ', 'section', multipleColumns ? 'multiple-columns' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="section in songSections" :key="section[0].section" v-html="formatSection(section)"></div>
 		</div>
-	</div>
+	</v-sheet>
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 export default {
 	props: ["song"],
 
@@ -41,7 +55,7 @@ export default {
 			let textWithChordsAbove = "";
 			section.forEach((e) => {
 				let chordLine = "";
-				if (e.chords.length != 0) {
+				if (e.chords != undefined && e.chords.length != 0) {
 					e.chords.forEach((ch, i) => {
 						if (i == 0) {
 							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + ch[1] + "</span>");
@@ -58,6 +72,7 @@ export default {
 
 		updateFontSize() {
 			//   if (this.multipleColumns) {
+			if (this.$refs.songSheet == undefined) return;
 			const width = this.$refs.songSheet.clientWidth;
 			const overflowDiff = width - this.$refs.songSheet.scrollWidth;
 			if (overflowDiff < 0 && this.dynamicSectionFontSize > 9) {
@@ -97,6 +112,15 @@ export default {
 				return this.dynamicSectionFontSize;
 			}
 		},
+		size() {
+			return this.$vuetify.breakpoint;
+		},
+		songValid() {
+			return this.song !== undefined && this.song.title !== undefined && this.song.author !== undefined && this.song.lines !== undefined;
+		},
+		...mapGetters({
+			songListLoading: "getSongListLoading",
+		}),
 	},
 
 	created() {
@@ -126,13 +150,13 @@ export default {
 }
 
 .song-sheet {
-	//   border: 1px solid green;
+	// border: 1px solid green;
 	align-items: center;
 }
 .song-sheet.multiple-columns {
 	display: flex;
 	flex-flow: column;
 	flex-wrap: wrap;
-	max-height: 93vh;
+	max-height: 90vh;
 }
 </style>

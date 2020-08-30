@@ -9,6 +9,8 @@
 	},
 	"dependencies": {
 		"core-js": "^3.6.5",
+		"firebase": "^7.19.0",
+		"firebaseui": "^4.6.1",
 		"uuid": "^8.3.0",
 		"vue": "^2.6.11",
 		"vue-multipane": "^0.9.5",

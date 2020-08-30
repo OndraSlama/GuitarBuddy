@@ -3,6 +3,7 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import vuetify from "./plugins/vuetify";
+import * as firebase from "firebase";
 
 Vue.config.productionTip = false;
 
@@ -11,6 +12,21 @@ new Vue({
 	store,
 	vuetify,
 	render: (h) => h(App),
+	created() {
+		firebase.initializeApp({
+			apiKey: "AIzaSyAF_ixmGuQrZZWTPFLD3O8w-6fovmhlyQQ",
+			authDomain: "guitarbuddy-bcd3c.firebaseapp.com",
+			databaseURL: "https://guitarbuddy-bcd3c.firebaseio.com",
+			projectId: "guitarbuddy-bcd3c",
+			storageBucket: "guitarbuddy-bcd3c.appspot.com",
+			messagingSenderId: "267513568910",
+			appId: "1:267513568910:web:1e1ba1daa7f90ea6fc33df",
+			measurementId: "G-JDZY638NH4",
+		});
+
+		store.dispatch("checkUserStatus");
+		store.dispatch("loadSongs");
+	},
 }).$mount("#app");
 
 // Functions
