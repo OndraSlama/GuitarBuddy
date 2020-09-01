@@ -4,24 +4,50 @@
 			<!-- <div v-for="song in songs" :key="song.id" class="ma-3">
 				<span>{{ song.title }}</span> <v-btn :to="'/song/' + song.id">Go to song</v-btn>
 			</div> -->
+			<v-row class="ma-3 mt-3">
+				<v-text-field v-model="filters.search" dense flat hide-details prepend-inner-icon="mdi-magnify" outlined></v-text-field>
 
-			<v-list two-line subheader>
-				<v-list-item><v-text-field v-model="filters.search" dense class="ma-1 mt-3" flat hide-details append-icon="mdi-magnify" outlined></v-text-field></v-list-item>
-				<v-subheader>Collection</v-subheader>
+				<v-tooltip top>
+					<template v-slot:activator="{ on, attrs }">
+						<v-btn v-bind="attrs" v-on="on" @click="goupByAuthor = !goupByAuthor" icon large class="ml-1">
+							<v-icon v-if="goupByAuthor">mdi-account-details-outline</v-icon>
+							<v-icon v-if="!goupByAuthor">mdi-format-list-bulleted</v-icon>
+						</v-btn>
+					</template>
+					<span v-if="!goupByAuthor">Group by author</span>
+					<span v-if="goupByAuthor">Ungroup</span>
+				</v-tooltip>
+			</v-row>
+			<!-- <v-sheet class="mx-3">
+				<v-switch v-model="goupByAuthor" inset label="Group by author"></v-switch>
+			</v-sheet> -->
+
+			<v-list subheader>
+				<!-- <v-list-item></v-list-item> -->
+
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"> </v-skeleton-loader>
-				<v-scroll-x-transition group>
-					<v-list-item v-for="song in filteredSongs(filters)" :key="song.id" router :to="'/song/' + song.id">
-						<v-list-item-content>
-							<v-list-item-title>{{ song.title }}</v-list-item-title>
-							<v-list-item-subtitle>{{ song.author }}</v-list-item-subtitle>
-						</v-list-item-content>
-						<v-list-item-action>
-							<v-btn small icon @click.stop.prevent="" :to="'/edit-song/' + song.id">
-								<v-icon>mdi-pencil-outline</v-icon>
-							</v-btn>
-						</v-list-item-action>
-					</v-list-item>
-				</v-scroll-x-transition>
+				<v-scroll-y-transition group hide-on-leave>
+					<v-list-item-group v-for="(group, key) in groupedSongs" :key="key">
+						<v-divider></v-divider>
+						<v-subheader><v-checkbox v-if="selection"></v-checkbox> {{ key }}</v-subheader>
+						<v-scroll-y-transition group hide-on-leave>
+							<v-list-item v-for="song in group" :key="song.id" router :to="'/song/' + song.id">
+								<v-list-item-action v-if="selection">
+									<v-checkbox @click.stop.prevent=""></v-checkbox>
+								</v-list-item-action>
+								<v-list-item-content>
+									<v-list-item-title>{{ song.title }}</v-list-item-title>
+									<v-list-item-subtitle v-if="!goupByAuthor">{{ song.author }}</v-list-item-subtitle>
+								</v-list-item-content>
+								<v-list-item-action>
+									<v-btn small icon @click.stop.prevent="" :to="'/edit-song/' + song.id">
+										<v-icon>mdi-pencil-outline</v-icon>
+									</v-btn>
+								</v-list-item-action>
+							</v-list-item>
+						</v-scroll-y-transition>
+					</v-list-item-group>
+				</v-scroll-y-transition>
 			</v-list>
 		</v-navigation-drawer>
 	</div>
@@ -32,17 +58,14 @@ import { mapGetters } from "vuex";
 export default {
 	data() {
 		return {
+			selection: false,
+			goupByAuthor: false,
 			filters: {
 				search: "",
 			},
 		};
 	},
-	methods: {
-		// editSong(id) {
-		// 	this.$router.push();
-		// 	// this.$store.commit("deleteSong", id);
-		// },
-	},
+	methods: {},
 	computed: {
 		size() {
 			return this.$vuetify.breakpoint;
@@ -57,6 +80,24 @@ export default {
 			set(val) {
 				this.$store.commit("setSongListOpened", val);
 			},
+		},
+
+		groupedSongs() {
+			let groups = {};
+			if (this.goupByAuthor) {
+				this.filteredSongs(this.filters).forEach((song) => {
+					if (groups[song.author] == undefined) {
+						groups[song.author] = [];
+					}
+					groups[song.author].push(song);
+				});
+			} else {
+				groups = {
+					Collection: this.filteredSongs(this.filters),
+				};
+			}
+
+			return groups;
 		},
 
 		...mapGetters({

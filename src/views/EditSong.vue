@@ -30,13 +30,18 @@ export default {
 				alert("Undefined formated song");
 				return;
 			}
-			let updatedSong = {
-				...this.song,
-				...this.formatedSong,
-				modifiedAt: new Date().toISOString(),
+
+			const payload = {
+				id: this.id,
+				data: {
+					...this.song,
+					...this.formatedSong,
+					modifiedAt: new Date().toISOString(),
+				},
 			};
 
-			console.log(updatedSong);
+			this.$store.dispatch("updateSong", payload);
+			this.$router.push("/song/" + this.id);
 		},
 
 		onCancel() {
@@ -44,8 +49,7 @@ export default {
 		},
 
 		onDelete() {
-			console.log("delete");
-			this.$store.commit("deleteSong", this.id);
+			this.$store.dispatch("deleteSong", this.id);
 			this.$router.push("/song-book");
 		},
 	},
@@ -72,14 +76,14 @@ export default {
 		"song-editor": SongEditor,
 	},
 
-	watch: {
-		"$route.params.id": function() {
-			this.transitioning = true;
-			setTimeout(() => {
-				this.transitioning = false;
-			}, 80);
-		},
-	},
+	// watch: {
+	// 	"$route.params.id": function() {
+	// 		this.transitioning = true;
+	// 		setTimeout(() => {
+	// 			this.transitioning = false;
+	// 		}, 80);
+	// 	},
+	// },
 };
 </script>
 

@@ -51,6 +51,13 @@ export default new Vuex.Store({
 		addSong(state, song) {
 			state.songs.push(song);
 		},
+		updateSong(state, payload) {
+			let song = state.songs.find((el) => el.id === payload.id);
+
+			state.songs[state.songs.indexOf(song)] = {
+				...payload.data,
+			};
+		},
 		deleteSong(state, id) {
 			state.songs.splice(
 				state.songs
@@ -98,6 +105,26 @@ export default new Vuex.Store({
 					commit("setSongListLoading", false);
 				});
 		},
+
+		updateSong({ commit }, payload) {
+			console.log(payload);
+			commit("setSongListLoading", true);
+			firebase
+				.database()
+				.ref("songs")
+				.child(payload.id)
+				.update({
+					...payload.data,
+				})
+				.then(() => {
+					commit("updateSong", payload);
+					commit("setSongListLoading", false);
+				})
+				.catch((e) => {
+					console.log(e);
+					commit("setSongListLoading", false);
+				});
+		},
 		addSong({ commit }, payload) {
 			firebase
 				.database()
@@ -112,6 +139,21 @@ export default new Vuex.Store({
 				})
 				.catch((e) => {
 					console.log(e);
+				});
+		},
+		deleteSong({ commit }, payload) {
+			commit("setSongListLoading", true);
+			firebase
+				.database()
+				.ref("songs/" + payload)
+				.remove()
+				.then(() => {
+					commit("deleteSong", payload);
+					commit("setSongListLoading", false);
+				})
+				.catch((e) => {
+					console.log(e);
+					commit("setSongListLoading", false);
 				});
 		},
 

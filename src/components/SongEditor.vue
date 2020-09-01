@@ -1,15 +1,15 @@
 <template>
 	<div>
 		<v-form @submit.prevent="$emit('song-submited')" ref="form" lazy-validation>
-			<v-text-field class="my-3" v-model="songSource.title" label="Song Title" :rules="rules" hide-details="auto" outlined></v-text-field>
-			<v-text-field v-model="songSource.author" label="Author" outlined></v-text-field>
-			<v-textarea solo class="monospace" v-model="songSource.text" label="Song text with chords" :rules="rules" auto-grow></v-textarea>
+			<v-text-field class="my-3" v-model="tempSource.title" label="Song Title" :rules="rules" hide-details="auto" outlined></v-text-field>
+			<v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field>
+			<v-textarea solo class="text-area" v-model="tempSource.text" label="Song text with chords" :rules="rules" auto-grow></v-textarea>
 
 			<v-toolbar class="elevation-0" :color="$vuetify.theme.dark ? '#121212' : ''">
-				<v-btn-toggle v-model="songSource.chordsAboveText" rounded mandatory>
+				<v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
 					<v-tooltip top>
 						<template v-slot:activator="{ on, attrs }">
-							<v-btn v-bind="attrs" v-on="on">
+							<v-btn icon v-bind="attrs" v-on="on">
 								<!-- <span>In text</span> -->
 								<v-icon>mdi-code-brackets</v-icon>
 							</v-btn>
@@ -18,7 +18,7 @@
 					</v-tooltip>
 					<v-tooltip top>
 						<template v-slot:activator="{ on, attrs }">
-							<v-btn v-bind="attrs" v-on="on">
+							<v-btn icon v-bind="attrs" v-on="on">
 								<v-icon>mdi-format-text-variant</v-icon>
 								<!-- <span>Above</span> -->
 							</v-btn>
@@ -26,14 +26,36 @@
 						<span>Chords above text aligned with spaces</span>
 					</v-tooltip>
 				</v-btn-toggle>
+				<v-tooltip top>
+					<template v-slot:activator="{ on: onMenu }">
+						<v-menu rounded="large" transition="slide-y-transition" bottom>
+							<template v-slot:activator="{ on: onTooltip }">
+								<v-btn icon class="ml-2" large v-on="{ ...onMenu, ...onTooltip }">
+									<!-- <span>In text</span> -->
+									<v-icon>mdi-playlist-edit</v-icon>
+								</v-btn>
+							</template>
+							<v-list>
+								<v-list-item @click="trimLines()">
+									<v-list-item-title>Trim lines</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-keyboard-space</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+							</v-list>
+						</v-menu>
+					</template>
+					<span>Aditional text tools</span>
+				</v-tooltip>
+
 				<v-spacer></v-spacer>
 
 				<!-- <v-spacer class="></v-spacer> -->
 				<!-- <v-col class="text-center"> -->
 				<!-- <v-row> -->
-				<v-btn v-if="type === 'edit'" @click="$emit('delete')" icon color="secondary"><v-icon>mdi-delete-outline</v-icon></v-btn>
-				<v-btn @click="$emit('cancel')" icon color="secondary"><v-icon>mdi-cancel</v-icon></v-btn>
-				<v-btn fab large type="submit" class="ml-2" color="primary" :disabled="!validInput || !userLogged">
+				<v-btn v-if="type === 'edit'" @click="$emit('delete')" icon><v-icon>mdi-delete-outline</v-icon></v-btn>
+				<v-btn @click="$emit('cancel')" icon><v-icon>mdi-cancel</v-icon></v-btn>
+				<v-btn fab large type="submit" class="ml-2 mr-n5" color="primary" :disabled="!validInput || !userLogged">
 					<v-icon v-if="type === 'add'">mdi-upload-outline</v-icon>
 					<v-icon v-if="type === 'edit'">mdi-content-save-outline</v-icon>
 				</v-btn>
@@ -60,14 +82,36 @@ export default {
 	data() {
 		return {
 			rules: [(value) => !!value || "Required."],
+			tempSource: undefined,
 		};
 	},
 
 	props: ["songSource", "type"],
 
 	methods: {
+		trimLines() {
+			this.tempSource.lines.forEach((line) => {
+				console.log(line);
+			});
+		},
+
 		resetValidation() {
 			this.$refs.form.resetValidation();
+		},
+
+		replaceAndFill(text, regex, replacement) {
+			let match;
+			let replacementWithSpaces = replacement;
+			while ((match = RegExp(regex, "i").exec(text))) {
+				replacementWithSpaces = replacement;
+				for (let i = 0; i < match[0].trim().length; i++) {
+					replacementWithSpaces += " ";
+				}
+				replacementWithSpaces = replacementWithSpaces.replace("$2", match[2]);
+				text = text.replace(match[0].trim(), replacementWithSpaces);
+			}
+
+			return text;
 		},
 
 		splitLinesAndFindChords(text, chordsAboveText) {
@@ -81,10 +125,10 @@ export default {
 			var chordBracketRegexString = "\\[\\s*(" + chordRegexString + ")\\s*\\]";
 
 			// Parse text
-			text = text.replace(/[\s]*\(?r(ef)?(\.|:|\))\)?[\s]*/gi, "\nChorus\n");
-			text = text.replace(/[\s]*\(?(\d)(\.|:|\))\)?[\s]*/gi, "\nVerse $1\n");
-			text = text.replace(/[\s]*\(?bridge(\.|:|\))\)?[\s]*/gi, "\nBridge\n");
-			text = text.replace(/[\s]*\(?ending(\.|:|\))\)?[\s]*/gi, "\nEnding\n");
+			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?r(ef)?(\\.|:|\\))\\)?[\\s]*", "Chorus\n");
+			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?(\\d)(\\.|:|\\))\\)?[\\s]*", "Verse $2\n");
+			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?bridge(\\.|:|\\))\\)?[\\s]*", "Bridge\n");
+			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?ending(\\.|:|\\))\\)?[\\s]*", "Ending\n");
 			text = text.replace(/\n\n[\n]+/g, "\n\n");
 
 			let lineArray = [];
@@ -163,7 +207,7 @@ export default {
 
 	computed: {
 		formatedSong() {
-			let lineArray = this.splitLinesAndFindChords(this.songSource.text, this.songSource.chordsAboveText);
+			let lineArray = this.splitLinesAndFindChords(this.tempSource.text, this.tempSource.chordsAboveText);
 			let curentSection = 0;
 			let currentName = "";
 			let finalLineArray = [];
@@ -189,16 +233,16 @@ export default {
 
 			return {
 				lines: finalLineArray,
-				title: this.songSource.title,
-				author: this.songSource.author,
+				title: this.tempSource.title,
+				author: this.tempSource.author,
 			};
 		},
 		validSource() {
-			return this.songSource !== undefined && this.songSource !== null;
+			return this.tempSource !== undefined && this.tempSource !== null;
 		},
 		validInput() {
-			if (this.songSource.title.length == 0) return false;
-			if (this.songSource.text.length == 0) return false;
+			if (this.tempSource.title.length == 0) return false;
+			if (this.tempSource.text.length == 0) return false;
 			return true;
 		},
 		...mapGetters({
@@ -209,12 +253,14 @@ export default {
 	},
 
 	created() {
+		this.tempSource = { ...this.songSource };
 		this.$emit("input", this.formatedSong);
 	},
 
 	watch: {
-		songSource: {
+		tempSource: {
 			handler: function() {
+				// this.tempSource = { ...this.songSource };
 				this.$emit("input", this.formatedSong);
 			},
 			deep: true,
@@ -223,4 +269,9 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.text-area {
+	font-family: "Roboto Mono", monospace;
+	white-space: pre;
+}
+</style>

@@ -5,9 +5,9 @@
 				<p class="subtitle text--primary">{{ song.author }}</p>
 				<p class="display-2 text--primary">{{ song.title }}</p>
 			</v-col>
-			<v-spacer v-for="n in 10" :key="n"></v-spacer>
+			<!-- <v-spacer v-for="n in 10" :key="n"></v-spacer> -->
 
-			<v-col class="text-start" align-self="center">
+			<v-col class="text-start" :style="{ 'max-width': '150px' }" align-self="center">
 				<v-btn-toggle v-model="multipleColumns" rounded mandatory>
 					<v-tooltip top>
 						<template v-slot:activator="{ on, attrs }">
@@ -32,7 +32,7 @@
 			</v-col>
 		</v-row>
 		<div v-if="songValid && song.lines.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
-			<div :class="['mb-5 ', 'section', multipleColumns ? 'multiple-columns' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="section in songSections" :key="section[0].section" v-html="formatSection(section)"></div>
+			<div :class="['mb-5 ', 'section', multipleColumns ? 'multiple-columns' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i" v-html="formatSection(section)"></div>
 		</div>
 	</v-sheet>
 </template>
@@ -52,8 +52,8 @@ export default {
 
 	methods: {
 		formatSection(section) {
-			let textWithChordsAbove = "";
-			section.forEach((e) => {
+			let textWithChordsAbove = "<span class='" + section.name + "'><div class='font-weight-black mb-2'>" + section.name.charAt(0).toUpperCase() + section.name.slice(1) + "</div>";
+			section.lines.forEach((e) => {
 				let chordLine = "";
 				if (e.chords != undefined && e.chords.length != 0) {
 					e.chords.forEach((ch, i) => {
@@ -67,7 +67,7 @@ export default {
 				}
 				textWithChordsAbove += chordLine + e.lyrics + "<br>";
 			});
-			return textWithChordsAbove;
+			return textWithChordsAbove + "</span>";
 		},
 
 		updateFontSize() {
@@ -96,15 +96,22 @@ export default {
 			}
 
 			let sections = [];
-			sections.push([]);
-			this.song.lines.forEach((e, i) => {
-				if (i - 1 >= 0 && e.section > this.song.lines[i - 1].section) {
-					sections.push([]);
+			sections.push({
+				name: this.song.lines[0].sectionName,
+				lines: [],
+			});
+			this.song.lines.forEach((line, i) => {
+				if (i - 1 >= 0 && line.section > this.song.lines[i - 1].section) {
+					sections.push({
+						name: this.song.lines[i].sectionName !== this.song.lines[i - 1].sectionName ? this.song.lines[i].sectionName : "",
+						lines: [],
+					});
 				}
-				sections[sections.length - 1].push(e);
+				sections[sections.length - 1].lines.push(line);
 			});
 			return sections;
 		},
+
 		sectionFontSize() {
 			if (!this.multipleColumns) {
 				return Math.min(16, this.dynamicSectionFontSize);

@@ -42,6 +42,24 @@ export default {
 .chord {
 	color: rgb(255, 92, 92);
 }
+/* .verse {
+	color: rgb(156, 156, 156);
+} */
+/* .chorus {
+	color: rgb(116, 124, 38);
+}
+.bridge {
+	color: rgb(79, 93, 155);
+} */
+/* .verse .name {
+	color: rgb(156, 156, 156);
+}
+.chorus .name {
+	color: rgb(50, 104, 12);
+}
+.bridge .name {
+	color: rgb(92, 102, 134);
+} */
 .thin-border {
 	border: 1px solid rgb(104, 104, 104);
 }
