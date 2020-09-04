@@ -43,7 +43,13 @@ const routes = [
 	{
 		path: "/login",
 		name: "LoginPage",
+		props: (route) => ({ redirect: route.query.redirect }),
 		component: () => import("../views/LoginPage.vue"),
+	},
+	{
+		path: "/user",
+		name: "UserPage",
+		component: () => import("../views/UserPage.vue"),
 	},
 ];
 

@@ -1,15 +1,17 @@
 <template>
 	<div>
 		<p class="text-h3 text--secondary text-end font-weight-light text-sm-h2 mb-6">Edit song</p>
-		<v-row>
-			<v-col cols="12" md="6" lg="4">
-				<song-editor :songSource="song.input" v-on:song-submited="saveSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" type="edit"></song-editor>
-			</v-col>
-			<v-divider class="hidden-md-and-up"></v-divider>
-			<v-col cols="12" md="6" lg="8">
-				<song-sheet :song="formatedSong" class="pl-md-6"></song-sheet>
-			</v-col>
-		</v-row>
+		<v-scroll-x-transition>
+			<v-row v-if="!transitioning">
+				<v-col cols="12" md="6" lg="4">
+					<song-editor :songSource="song.input" v-on:song-submited="saveSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" type="edit"></song-editor>
+				</v-col>
+				<v-divider class="hidden-md-and-up"></v-divider>
+				<v-col cols="12" md="6" lg="8">
+					<song-sheet :song="formatedSong" class="pl-md-6"></song-sheet>
+				</v-col>
+			</v-row>
+		</v-scroll-x-transition>
 	</div>
 </template>
 
@@ -25,7 +27,7 @@ export default {
 		};
 	},
 	methods: {
-		saveSong() {
+		saveSong(songSource) {
 			if (this.formatedSong == undefined) {
 				alert("Undefined formated song");
 				return;
@@ -36,6 +38,7 @@ export default {
 				data: {
 					...this.song,
 					...this.formatedSong,
+					input: { ...songSource },
 					modifiedAt: new Date().toISOString(),
 				},
 			};
@@ -76,14 +79,14 @@ export default {
 		"song-editor": SongEditor,
 	},
 
-	// watch: {
-	// 	"$route.params.id": function() {
-	// 		this.transitioning = true;
-	// 		setTimeout(() => {
-	// 			this.transitioning = false;
-	// 		}, 80);
-	// 	},
-	// },
+	watch: {
+		"$route.params.id": function() {
+			this.transitioning = true;
+			setTimeout(() => {
+				this.transitioning = false;
+			}, 80);
+		},
+	},
 };
 </script>
 

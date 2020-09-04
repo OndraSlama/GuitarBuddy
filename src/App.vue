@@ -28,6 +28,9 @@ export default {
 		//
 	}),
 	computed: {
+		scrollbarTheme() {
+			return this.$vuetify.theme.dark ? "dark" : "light";
+		},
 		size() {
 			return this.$vuetify.breakpoint;
 		},
@@ -62,5 +65,23 @@ export default {
 } */
 .thin-border {
 	border: 1px solid rgb(104, 104, 104);
+}
+
+/* Scroll bar */
+::-webkit-scrollbar {
+	width: 4px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.397);
+	border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.603);
 }
 </style>

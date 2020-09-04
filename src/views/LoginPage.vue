@@ -1,27 +1,53 @@
 <template>
-	<div>
-		<p class="display-1">You must be logged in order to acces this page</p>
-		<section id="firebaseui-auth-container"></section>
-	</div>
+  <div>
+    <p
+      v-if="willRedirect"
+      class="display-1 text--secondary text-center mb-10"
+    >You must be logged in to access this page</p>
+    <p
+      v-if="!willRedirect"
+      class="display-1 text--secondary text-center mb-10"
+    >Login to Guitar Buddy</p>
+    <login-ui :next="this.redirect"></login-ui>
+    <!-- <v-row>
+      <v-col class="text-center">
+        <v-scale-transition hide-on-leave>
+          <v-btn x-large v-show="!dialogOpened" @click="openLoginDialog">Login</v-btn>
+        </v-scale-transition>
+      </v-col>
+    </v-row>-->
+  </div>
 </template>
 
 <script>
-import * as firebase from "firebase";
-import * as firebaseui from "firebaseui";
-import "firebaseui/dist/firebaseui.css";
-
+import LoginUI from "../components/Login/LoginUI";
+import { mapGetters } from "vuex";
 export default {
-	mounted() {
-		let ui = firebaseui.auth.AuthUI.getInstance();
-		if (!ui) {
-			ui = new firebaseui.auth.AuthUI(firebase.auth());
-		}
-		var uiConfig = {
-			signInSuccessUrl: "/song-book",
-			signInOptions: [firebase.auth.GoogleAuthProvider.PROVIDER_ID, firebase.auth.FacebookAuthProvider.PROVIDER_ID],
-		};
-		ui.start("#firebaseui-auth-container", uiConfig);
-	},
+  data() {
+    return {};
+  },
+  props: ["redirect"],
+  computed: {
+    willRedirect() {
+      return !(this.redirect === undefined);
+    },
+    ...mapGetters({
+      dialogOpened: "getDialogOpened",
+      userLogged: "getUserLogged",
+    }),
+  },
+  methods: {},
+  created() {},
+  components: {
+    "login-ui": LoginUI,
+  },
+  watch: {
+    userLogged() {
+      if (this.userLogged) {
+        this.$router.push(this.redirect);
+      }
+    },
+  },
 };
 </script>
 

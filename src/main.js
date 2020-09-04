@@ -4,8 +4,11 @@ import router from "./router";
 import store from "./store";
 import vuetify from "./plugins/vuetify";
 import * as firebase from "firebase";
+import DeleteDialog from "./components/DeleteDialog";
 
 Vue.config.productionTip = false;
+
+Vue.component("delete-dialog", DeleteDialog);
 
 new Vue({
 	router,
@@ -24,8 +27,7 @@ new Vue({
 			measurementId: "G-JDZY638NH4",
 		});
 
-		store.dispatch("checkUserStatus");
-		store.dispatch("loadSongs");
+		store.dispatch("onUserStatusChange");
 	},
 }).$mount("#app");
 
