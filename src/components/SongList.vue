@@ -162,8 +162,8 @@ export default {
     ...mapGetters({
       userLogged: "getUserLogged",
       openedStore: "getSongListOpened",
-      songs: "getSongs",
-      filteredSongs: "getFilteredSongs",
+      songs: "getUserSongs",
+      filteredSongs: "getFilteredUserSongs",
       songListLoading: "getSongListLoading",
     }),
   },

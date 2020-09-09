@@ -6,7 +6,9 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
 	state: {
-		songs: [],
+		browseSongs: [],
+		userSongs: [],
+		loadedSong: null,
 		user: null,
 		songListOpened: false,
 		deleteDialogOpened: false,
@@ -14,15 +16,11 @@ export default new Vuex.Store({
 		showTooltips: false,
 	},
 	getters: {
-		getSongs(state) {
-			return state.songs;
-		},
-		getSongListOpened(state) {
-			return state.songListOpened;
-		},
-		getSong: (state) => (id) => state.songs.find((el) => el.id === id),
+		getSongs: (state) => state.browseSongs,
+		getSongListOpened: (state) => state.songListOpened,
+		getLoadedSong: (state) => state.loadedSong,
 
-		getFilteredSongs: (state) => ({ search }) => {
+		getFilteredUserSongs: (state, getters) => ({ search }) => {
 			let normalizeString = (string) => {
 				return string
 					.normalize("NFD")
@@ -30,7 +28,9 @@ export default new Vuex.Store({
 					.toLowerCase();
 			};
 
-			return state.songs.filter((el) => {
+			if (!getters.getUserLogged || state.userSongs === undefined) return [];
+
+			return state.userSongs.filter((el) => {
 				const titleMatch = normalizeString(el.title).includes(normalizeString(search));
 				const authorMatch = normalizeString(el.author).includes(normalizeString(search));
 
@@ -38,6 +38,7 @@ export default new Vuex.Store({
 			});
 		},
 		getUser: (state) => state.user,
+		getUserSongs: (state) => state.userSongs,
 		getUserLogged: (state) => state.user !== null && state.user !== undefined,
 		getSongListLoading: (state) => state.songListLoading,
 		getShowTooltips: (state) => state.showTooltips,
@@ -54,18 +55,22 @@ export default new Vuex.Store({
 			state.songListLoading = value;
 		},
 		loadSongs(state, songs) {
-			state.songs = songs;
+			state.browseSongs = songs;
+		},
+
+		setLoadedSong(state, song) {
+			state.loadedSong = song;
 		},
 		// addSong(state, song) {
-		// 	state.songs.push(song);
+		// 	state.browseSongs.push(song);
 		// },
 		// updateSong(state, payload) {
-		// 	let song = state.songs.find((el) => el.id === payload.id);
-		// 	Vue.set(state.songs, state.songs.indexOf(song), { ...payload.data });
+		// 	let song = state.browseSongs.find((el) => el.id === payload.id);
+		// 	Vue.set(state.browseSongs, state.browseSongs.indexOf(song), { ...payload.data });
 		// },
 		// deleteSong(state, id) {
-		// 	state.songs.splice(
-		// 		state.songs
+		// 	state.browseSongs.splice(
+		// 		state.browseSongs
 		// 			.map((song) => {
 		// 				return song.id;
 		// 			})
@@ -87,32 +92,46 @@ export default new Vuex.Store({
 				...user,
 			};
 		},
-		setUserData(state, userData) {
-			state.user = { ...state.user, songs: userData };
+		setUserData(state, userSongs) {
+			state.userSongs = userSongs;
 		},
 		setDialogOpened(state, value) {
 			state.deleteDialogOpened = value;
 		},
 	},
 	actions: {
-		onSongsChange({ commit, dispatch, getters }) {
-			if (getters.getUserLogged) {
-				commit("setSongListLoading", true);
-				firebase
-					.database()
-					.ref("songs")
-					.on("value", (data) => {
-						console.log("on songs change");
-						dispatch("parseSongs", data);
-					});
-			}
-		},
+		// onSongsChange({ commit, dispatch, getters }) {
+		// 	if (getters.getUserLogged) {
+		// 		commit("setSongListLoading", true);
+		// 		firebase
+		// 			.database()
+		// 			.ref("songs")
+		// 			.on("value", (data) => {
+		// 				console.log("on songs change");
+		// 				dispatch("parseSongs", data);
+		// 			});
+		// 	}
+		// },
 
-		offSongsChange() {
+		// offSongsChange() {
+		// 	firebase
+		// 		.database()
+		// 		.ref("songs")
+		// 		.off("value");
+		// },
+
+		loadSong({ commit }, payload) {
+			commit("setLoadedSong", null);
 			firebase
 				.database()
-				.ref("songs")
-				.off("value");
+				.ref("songs/" + payload)
+				.once("value")
+				.then((data) => {
+					commit("setLoadedSong", data.val());
+				})
+				.catch((e) => {
+					console.log(e);
+				});
 		},
 
 		onUserDataChange({ dispatch, getters }) {
@@ -123,7 +142,7 @@ export default new Vuex.Store({
 					.on("value", (data) => {
 						console.log("on user data change");
 						dispatch("parseUserData", data);
-						dispatch("loadSongsOnce");
+						// dispatch("loadSongsOnce");
 					});
 			}
 		},
@@ -137,30 +156,30 @@ export default new Vuex.Store({
 			}
 		},
 
-		loadSongsOnce({ dispatch }) {
-			firebase
-				.database()
-				.ref("songs")
-				.once("value")
-				.then((data) => {
-					dispatch("parseSongs", data);
-				});
-		},
+		// loadSongsOnce({ dispatch }) {
+		// 	firebase
+		// 		.database()
+		// 		.ref("songs")
+		// 		.once("value")
+		// 		.then((data) => {
+		// 			dispatch("parseSongs", data);
+		// 		});
+		// },
 
-		parseSongs({ commit, getters }, payload) {
-			if (getters.getUserLogged) {
-				let songs = [];
-				const obj = payload.val();
-				for (let key in obj) {
-					songs.push({
-						id: key,
-						...obj[key],
-					});
-				}
-				commit("loadSongs", songs);
-				commit("setSongListLoading", false);
-			}
-		},
+		// parseSongs({ commit, getters }, payload) {
+		// 	if (getters.getUserLogged) {
+		// 		let songs = [];
+		// 		const obj = payload.val();
+		// 		for (let key in obj) {
+		// 			songs.push({
+		// 				id: key,
+		// 				...obj[key],
+		// 			});
+		// 		}
+		// 		commit("loadSongs", songs);
+		// 		commit("setSongListLoading", false);
+		// 	}
+		// },
 
 		parseUserData({ commit, getters }, payload) {
 			if (getters.getUserLogged) {
@@ -168,7 +187,7 @@ export default new Vuex.Store({
 				const obj = payload.val();
 				for (let key in obj) {
 					userSongs.push({
-						fbKey: key,
+						id: key,
 						...obj[key],
 					});
 				}
@@ -176,19 +195,26 @@ export default new Vuex.Store({
 			}
 		},
 
-		updateSong({ commit }, payload) {
-			commit("setSongListLoading", true);
-			firebase
-				.database()
-				.ref("songs")
-				.child(payload.id)
-				.update({
-					...payload.data,
-				})
-				.catch((e) => {
-					console.log(e);
-					commit("setSongListLoading", false);
-				});
+		updateSong({ commit, dispatch, getters }, payload) {
+			// commit("setSongListLoading", true);
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("songs")
+					.child(payload.id)
+					.update({
+						...payload.data,
+					})
+					.then(() => {
+						// commit("updateSong", payload);
+						dispatch("updateUserSong", payload);
+						commit("setSongListLoading", false);
+					})
+					.catch((e) => {
+						console.log(e);
+						commit("setSongListLoading", false);
+					});
+			}
 
 			// .then(() => {
 			// 	commit("updateSong", payload);
@@ -199,41 +225,92 @@ export default new Vuex.Store({
 			// 	commit("setSongListLoading", false);
 			// });
 		},
-		addSong({ dispatch }, payload) {
-			// console.log(commit);
-			firebase
-				.database()
-				.ref("songs")
-				.push(payload)
-				.then((data) => {
-					dispatch("addSongToUser", data.key);
-				})
-				.catch((e) => {
-					console.log(e);
-				});
-			console.log(payload);
-		},
 
-		addSongToUser({ getters }, payload) {
+		updateUserSong({ getters }, payload) {
+			// commit("setSongListLoading", true);
 			if (getters.getUserLogged) {
-				console.log(payload);
 				firebase
 					.database()
-					.ref("users/" + getters.getUser.uid + "/songs")
-					.push({ id: payload, favourite: false })
+					.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
+					.update({
+						title: payload.data.title,
+						author: payload.data.author,
+					})
 					.catch((e) => {
 						console.log(e);
 					});
 			}
 		},
 
-		deleteSong(_, payload) {
+		addSong({ dispatch, getters }, payload) {
+			// console.log(commit);
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("songs")
+					.push(payload)
+					.then((data) => {
+						dispatch("addSongToUser", { key: data.key, ...payload });
+					})
+					.catch((e) => {
+						console.log(e);
+					});
+			}
+		},
+
+		addSongToUser({ getters, dispatch }, payload) {
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/songs/" + payload.key)
+					.set({ title: payload.title, author: payload.author, favourite: false })
+					.then(() => {
+						dispatch("addUserToSong", payload.key);
+					})
+					.catch((e) => {
+						console.log(e);
+					});
+			}
+		},
+
+		addUserToSong({ getters }, payload) {
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("songs/" + payload + "/users/" + getters.getUser.uid)
+					.set(true)
+					.catch((e) => {
+						console.log(e);
+					});
+			}
+		},
+
+		deleteSong({ dispatch }, payload) {
 			// commit("setSongListLoading", true);
 			// console.log(commit);
 			firebase
 				.database()
 				.ref("songs/" + payload)
 				.remove()
+				.then(() => {
+					dispatch("deleteUserSong", payload);
+				})
+				.catch((e) => {
+					console.log(e);
+					// commit("setSongListLoading", false);
+				});
+		},
+
+		deleteUserSong({ dispatch }, payload) {
+			// commit("setSongListLoading", true);
+			// console.log(commit);
+			firebase
+				.database()
+				.ref("songs/" + payload)
+				.remove()
+				.then(() => {
+					dispatch("deleteUsersSong", payload);
+				})
 				.catch((e) => {
 					console.log(e);
 					// commit("setSongListLoading", false);
@@ -257,11 +334,11 @@ export default new Vuex.Store({
 					if (user) {
 						commit("setUser", user);
 						dispatch("onUserDataChange");
-						dispatch("onSongsChange");
+						// dispatch("onSongsChange");
 						resolve(user);
 					} else {
 						dispatch("offUserDataChange");
-						dispatch("offSongsChange");
+						// dispatch("offSongsChange");
 						commit("logout");
 					}
 				});

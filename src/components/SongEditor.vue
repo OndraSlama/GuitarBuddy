@@ -120,13 +120,17 @@ export default {
     },
 
     reset() {
-      this.tempSource = {
-        title: "",
-        author: "",
-        text: "",
-        chordsAboveText: true,
-      };
-      this.$refs.form.resetValidation();
+      if (this.type === "add") {
+        this.tempSource = {
+          title: "",
+          author: "",
+          text: "",
+          chordsAboveText: true,
+        };
+        this.$refs.form.resetValidation();
+      } else {
+        this.$emit("cancel");
+      }
     },
 
     onSubmit() {

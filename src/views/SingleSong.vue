@@ -1,10 +1,10 @@
 <template>
-	<div>
-		<v-skeleton-loader v-show="songListLoading" type="article"> </v-skeleton-loader>
-		<v-scroll-x-transition>
-			<song-sheet v-if="!songListLoading && !transitioning" :song="song"></song-sheet>
-		</v-scroll-x-transition>
-	</div>
+  <div>
+    <v-skeleton-loader v-show="songListLoading || song == null" type="article"></v-skeleton-loader>
+    <v-scroll-x-transition hide-on-leave>
+      <song-sheet v-if="!songListLoading && !transitioning && song != null" :song="song"></song-sheet>
+    </v-scroll-x-transition>
+  </div>
 </template>
 
 <script>
@@ -13,40 +13,42 @@ import SongSheet from "../components/SongSheet";
 import { mapGetters } from "vuex";
 
 export default {
-	data() {
-		return { transitioning: false };
-	},
+  data() {
+    return { transitioning: false };
+  },
 
-	computed: {
-		id() {
-			return this.$route.params.id;
-		},
+  computed: {
+    id() {
+      return this.$route.params.id;
+    },
 
-		song() {
-			return this.$store.getters.getSong(this.id);
-		},
+    songValid() {
+      return this.song != undefined || this.song != null;
+    },
 
-		songValid() {
-			return this.song != undefined || this.song != null;
-		},
+    ...mapGetters({
+      songListLoading: "getSongListLoading",
+      song: "getLoadedSong",
+    }),
+  },
 
-		...mapGetters({
-			songListLoading: "getSongListLoading",
-		}),
-	},
+  components: {
+    "song-sheet": SongSheet,
+  },
 
-	components: {
-		"song-sheet": SongSheet,
-	},
+  created() {
+    this.$store.dispatch("loadSong", this.id);
+  },
 
-	watch: {
-		"$route.params.id": function() {
-			this.transitioning = true;
-			setTimeout(() => {
-				this.transitioning = false;
-			}, 80);
-		},
-	},
+  watch: {
+    "$route.params.id": function () {
+      this.$store.dispatch("loadSong", this.id);
+      this.transitioning = true;
+      setTimeout(() => {
+        this.transitioning = false;
+      }, 80);
+    },
+  },
 };
 </script>
 
