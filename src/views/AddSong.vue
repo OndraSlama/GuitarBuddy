@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p class="text-h3 text--secondary text-end font-weight-light text-sm-h2 mb-6">Add new song</p>
+    <p class="text-h3 text--secondary text-start font-weight-light text-sm-h2 mb-6">Add new song</p>
     <v-row>
       <v-col cols="12" md="6" lg="4">
         <song-editor v-on:song-submited="importSong" v-on:input="formatedSong = $event" type="add"></song-editor>
@@ -35,6 +35,8 @@ export default {
         createdBy: this.user.uid,
         createdAt: new Date().toISOString(),
         modifiedAt: new Date().toISOString(),
+        public: songInput.public,
+        favourite: false,
         input: {
           ...songInput,
         },

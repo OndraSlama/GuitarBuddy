@@ -22,13 +22,16 @@ export default {
       return this.$route.params.id;
     },
 
+    song() {
+      return this.$store.getters.getCurrentSong(this.id);
+    },
+
     songValid() {
       return this.song != undefined || this.song != null;
     },
 
     ...mapGetters({
       songListLoading: "getSongListLoading",
-      song: "getLoadedSong",
     }),
   },
 
@@ -36,17 +39,18 @@ export default {
     "song-sheet": SongSheet,
   },
 
-  created() {
-    this.$store.dispatch("loadSong", this.id);
-  },
-
   watch: {
     "$route.params.id": function () {
-      this.$store.dispatch("loadSong", this.id);
       this.transitioning = true;
+
       setTimeout(() => {
         this.transitioning = false;
       }, 80);
+    },
+    song: function () {
+      if (this.song === null || this.song === undefined) {
+        this.$router.push("/song-book").catch(() => {});
+      }
     },
   },
 };

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p class="text-h3 text--secondary text-end font-weight-light text-sm-h2 mb-6">Edit song</p>
+    <p class="text-h3 text--secondary text-start font-weight-light text-sm-h2 mb-6">Edit song</p>
     <v-skeleton-loader v-show="transitioning || song == null" type="article"></v-skeleton-loader>
     <v-scroll-x-transition hide-on-leave>
       <v-row v-if="!transitioning && song !== null">
@@ -46,14 +46,14 @@ export default {
         data: {
           ...this.song,
           ...this.formatedSong,
+          public: songSource.public,
           input: { ...songSource },
           modifiedAt: new Date().toISOString(),
         },
       };
 
-      console.log(payload);
-
       this.$store.dispatch("updateSong", payload);
+
       //   this.$router.push("/song/" + this.id);
     },
 
@@ -71,6 +71,10 @@ export default {
       return this.$route.params.id;
     },
 
+    song() {
+      return this.$store.getters.getCurrentSong(this.id);
+    },
+
     songValid() {
       return this.song != undefined || this.song != null;
     },
@@ -78,7 +82,6 @@ export default {
       userLogged: "getUserLogged",
       user: "getUser",
       songListLoading: "getSongListLoading",
-      song: "getLoadedSong",
     }),
   },
   components: {
@@ -86,13 +89,8 @@ export default {
     "song-editor": SongEditor,
   },
 
-  created() {
-    this.$store.dispatch("loadSong", this.id);
-  },
-
   watch: {
     "$route.params.id": function () {
-      this.$store.dispatch("loadSong", this.id);
       this.transitioning = true;
       setTimeout(() => {
         this.transitioning = false;

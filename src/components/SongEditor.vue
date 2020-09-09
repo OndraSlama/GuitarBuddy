@@ -10,6 +10,11 @@
         outlined
       ></v-text-field>
       <v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field>
+      <v-toolbar class="elevation-0 my-n3" :color="$vuetify.theme.dark ? '#121212' : ''">
+        <v-spacer></v-spacer>
+        <v-switch v-model="tempSource.public" inset label="Public"></v-switch>
+      </v-toolbar>
+
       <v-textarea
         solo
         class="text-area"
@@ -102,6 +107,7 @@ export default {
           author: "",
           text: "",
           chordsAboveText: true,
+          public: true,
         };
       },
     },
@@ -126,6 +132,7 @@ export default {
           author: "",
           text: "",
           chordsAboveText: true,
+          public: true,
         };
         this.$refs.form.resetValidation();
       } else {

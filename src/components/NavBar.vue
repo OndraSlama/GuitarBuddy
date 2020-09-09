@@ -1,9 +1,16 @@
 <template>
   <div>
-    <v-app-bar clipped-left flat app :hide-on-scroll="size.smAndDown">
+    <v-app-bar
+      clipped-left
+      flat
+      app
+      :dense="size.xs"
+      :hide-on-scroll="size.smAndDown"
+      class="navbar"
+    >
       <v-app-bar-nav-icon v-if="userLogged" class="hidden-lg-and-up" @click.stop="toggleSongList()"></v-app-bar-nav-icon>
 
-      <v-toolbar-title class="hidden-sm-and-down">@hordeon</v-toolbar-title>
+      <v-toolbar-title class="hidden-sm-and-down">Guitar Buddy</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items class="hidden-sm-and-down">
         <v-btn
@@ -18,7 +25,9 @@
         </v-btn>
       </v-toolbar-items>
 
-      <v-spacer></v-spacer>
+      <v-divider vertical inset></v-divider>
+
+      <!-- <v-spacer></v-spacer> -->
 
       <v-btn icon @click="$vuetify.theme.dark = !$vuetify.theme.dark">
         <v-icon>mdi-invert-colors</v-icon>
@@ -105,4 +114,9 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.navigation {
+  /* position:static !important; */
+  z-index: 100 !important;
+}
+</style>
