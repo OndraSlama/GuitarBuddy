@@ -37,10 +37,13 @@ export default {
     }),
   },
   methods: {},
-  created() {},
+  created() {
+    this.$store.commit("setCurrentPage", "Login");
+  },
   components: {
     "login-ui": LoginUI,
   },
+
   watch: {
     userLogged() {
       if (this.userLogged) {

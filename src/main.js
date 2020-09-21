@@ -4,11 +4,17 @@ import router from "./router";
 import store from "./store";
 import vuetify from "./plugins/vuetify";
 import * as firebase from "firebase";
-import DeleteDialog from "./components/DeleteDialog";
+import DeleteDialog from "./components/Dialogs/DeleteDialog";
+import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog";
+import fullscreen from "vue-fullscreen";
+import moment from "moment";
 
+Vue.prototype.$moment = moment;
 Vue.config.productionTip = false;
 
+Vue.use(fullscreen);
 Vue.component("delete-dialog", DeleteDialog);
+Vue.component("edit-public-song-dialog", EditPublicSongDialog);
 
 new Vue({
 	router,

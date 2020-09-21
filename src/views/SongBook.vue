@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <h1 class="display-4">Song Book</h1>
-  </div>
+  <div></div>
 </template>
 
 <script>
@@ -11,6 +9,9 @@ export default {
     ...mapGetters({
       user: "getUser",
     }),
+  },
+  created() {
+    this.$store.commit("setCurrentPage", "My Songs");
   },
 };
 </script>

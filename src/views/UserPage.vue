@@ -31,6 +31,9 @@ export default {
       user: "getUser",
     }),
   },
+  created() {
+    this.$store.commit("setCurrentPage", this.user.displayName);
+  },
 };
 </script>
 

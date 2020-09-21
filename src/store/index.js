@@ -1,51 +1,118 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import * as firebase from "firebase";
+import normalizeString from "../functions/normalizeText";
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
 	state: {
-		browseSongs: [],
+		currentPage: "",
+		publicSongs: [],
 		userSongs: [],
 		loadedSong: null,
 		user: null,
 		songListOpened: false,
 		deleteDialogOpened: false,
 		songListLoading: false,
+		songLoading: false,
+		publicSongListLoading: false,
 		showTooltips: false,
 	},
 	getters: {
-		getSongs: (state) => state.browseSongs,
+		getCurrentPage: (state) => state.currentPage,
+		getSongs: (state) => state.publicSongs,
 		getSongListOpened: (state) => state.songListOpened,
 		getLoadedSong: (state) => state.loadedSong,
 		getCurrentSong: (state) => (id) => state.userSongs.find((el) => el.id === id),
 
-		getFilteredUserSongs: (state, getters) => ({ search }) => {
-			let normalizeString = (string) => {
-				return string
-					.normalize("NFD")
-					.replace(/[\u0300-\u036f]/g, "")
-					.toLowerCase();
-			};
-
+		getFilteredUserSongs: (state, getters) => (filters) => {
 			if (!getters.getUserLogged || state.userSongs === undefined) return [];
+			return getters.getFilteredSongs(state.userSongs, filters);
+		},
 
-			return state.userSongs.filter((el) => {
-				const titleMatch = normalizeString(el.title).includes(normalizeString(search));
-				const authorMatch = normalizeString(el.author).includes(normalizeString(search));
+		getFilteredPublicSongs: (state, getters) => (filters) => {
+			if (state.publicSongs === undefined) return [];
+			return getters.getFilteredSongs(state.publicSongs, filters);
+		},
+
+		getUser: (state) => state.user,
+		getUserSongs: (state) => state.userSongs,
+		getPublicSongs: (state) => state.publicSongs,
+		getUserLogged: (state) => state.user !== null && state.user !== undefined,
+		getSongListLoading: (state) => state.songListLoading,
+		getSongLoading: (state) => state.songLoading,
+		getPublicSongListLoading: (state) => state.publicSongListLoading,
+		getShowTooltips: (state) => state.showTooltips,
+		getDialogOpened: (state) => state.deleteDialogOpened,
+
+		getFilteredSongs: () => (songs, filters) => {
+			let filteredSongs = songs.filter((el) => {
+				const titleMatch = normalizeString(el.title).includes(normalizeString(filters.search));
+				const authorMatch = normalizeString(el.author).includes(normalizeString(filters.search));
 
 				return titleMatch || authorMatch;
 			});
+
+			let groups = {};
+			if (filters.groupByAuthor) {
+				filteredSongs.forEach((song) => {
+					if (groups[song.author] == undefined) {
+						groups[song.author] = [];
+					}
+					groups[song.author].push({ ...song, selected: false });
+				});
+			} else {
+				filteredSongs.forEach((song) => {
+					let group;
+					if (song.favourite) {
+						group = "Favourite";
+					} else {
+						group = "Collection";
+					}
+
+					if (groups[group] == undefined) {
+						groups[group] = [];
+					}
+					groups[group].push({ ...song, selected: false });
+				});
+			}
+
+			let groupsArray = [];
+
+			for (let key in groups) {
+				groupsArray.push({ group: key, songs: groups[key] });
+			}
+
+			for (let group of groupsArray) {
+				group.songs.sort((a, b) => {
+					const titleOrder = filters.songsAscOrder ? normalizeString(a.title) < normalizeString(b.title) : normalizeString(a.title) > normalizeString(b.title);
+					const authorOrder = filters.authorsAscOrder ? normalizeString(a.author) < normalizeString(b.author) : normalizeString(a.author) > normalizeString(b.author);
+					const dateOrder = filters.songsDateOrder ? normalizeString(a.modifiedAt) < normalizeString(b.modifiedAt) : normalizeString(a.modifiedAt) > normalizeString(b.modifiedAt);
+					if (filters.orderOption == 1) {
+						return authorOrder ? 1 : -1;
+					}
+					if (filters.orderOption == 2) {
+						return dateOrder ? 1 : -1;
+					}
+					return titleOrder ? 1 : -1;
+				});
+			}
+
+			return groupsArray.sort((a, b) => {
+				if (a.group === "Favourite") return -1;
+				if (b.group === "Favourite") return 1;
+
+				const authorOrder = filters.authorsAscOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
+				return authorOrder ? 1 : -1;
+			});
 		},
-		getUser: (state) => state.user,
-		getUserSongs: (state) => state.userSongs,
-		getUserLogged: (state) => state.user !== null && state.user !== undefined,
-		getSongListLoading: (state) => state.songListLoading,
-		getShowTooltips: (state) => state.showTooltips,
-		getDialogOpened: (state) => state.deleteDialogOpened,
 	},
+
 	mutations: {
+		setCurrentPage(state, value) {
+			state.currentPage = value;
+		},
 		setShowTooltips(state, value) {
 			state.showTooltips = value;
 		},
@@ -55,23 +122,44 @@ export default new Vuex.Store({
 		setSongListLoading(state, value) {
 			state.songListLoading = value;
 		},
-		loadSongs(state, songs) {
-			state.browseSongs = songs;
+		setSongLoading(state, value) {
+			state.songLoading = value;
 		},
-
-		// setLoadedSong(state, song) {
-		// 	state.loadedSong = song;
-		// },
+		setPublicSongListLoading(state, value) {
+			state.publicSongListLoading = value;
+		},
+		loadSongs(state, songs) {
+			state.publicSongs = songs;
+		},
+		setPublicSongs(state, songs) {
+			state.publicSongs = songs;
+		},
+		deletePublicSong(state, id) {
+			state.publicSongs.splice(
+				state.publicSongs
+					.map((song) => {
+						return song.id;
+					})
+					.indexOf(id),
+				1
+			);
+		},
+		resetPublicSongs(state) {
+			state.publicSongs = [];
+		},
+		setLoadedSong(state, song) {
+			state.loadedSong = song;
+		},
 		// addSong(state, song) {
-		// 	state.browseSongs.push(song);
+		// 	state.publicSongs.push(song);
 		// },
 		// updateSong(state, payload) {
-		// 	let song = state.browseSongs.find((el) => el.id === payload.id);
-		// 	Vue.set(state.browseSongs, state.browseSongs.indexOf(song), { ...payload.data });
+		// 	let song = state.publicSongs.find((el) => el.id === payload.id);
+		// 	Vue.set(state.publicSongs, state.publicSongs.indexOf(song), { ...payload.data });
 		// },
 		// deleteSong(state, id) {
-		// 	state.browseSongs.splice(
-		// 		state.browseSongs
+		// 	state.publicSongs.splice(
+		// 		state.publicSongs
 		// 			.map((song) => {
 		// 				return song.id;
 		// 			})
@@ -101,39 +189,67 @@ export default new Vuex.Store({
 		},
 	},
 	actions: {
-		// onSongsChange({ commit, dispatch, getters }) {
-		// 	if (getters.getUserLogged) {
-		// 		commit("setSongListLoading", true);
-		// 		firebase
-		// 			.database()
-		// 			.ref("songs")
-		// 			.on("value", (data) => {
-		// 				console.log("on songs change");
-		// 				dispatch("parseSongs", data);
-		// 			});
-		// 	}
-		// },
+		loadPublicSong({ commit }, payload) {
+			commit("setSongLoading", true);
+			firebase
+				.database()
+				.ref("users/" + payload.createdBy + "/songs/" + payload.id)
+				.once("value")
+				.then((data) => {
+					commit("setLoadedSong", data.val());
+					commit("setSongLoading", false);
+				})
+				.catch((e) => {
+					commit("setSongLoading", false);
+					console.log(e);
+				});
+		},
 
-		// offSongsChange() {
-		// 	firebase
-		// 		.database()
-		// 		.ref("songs")
-		// 		.off("value");
-		// },
+		loadPublicSongs({ commit }) {
+			commit("setPublicSongListLoading", true);
+			commit("resetPublicSongs");
+			firebase
+				.database()
+				.ref("publicSongs")
+				.once("value")
+				.then((data) => {
+					let publicSongs = [];
+					let obj = data.val();
+					for (let key in obj) {
+						publicSongs.push({
+							id: key,
+							...obj[key],
+						});
+					}
+					commit("setPublicSongs", publicSongs);
+					commit("setPublicSongListLoading", false);
+				})
+				.catch((e) => {
+					console.log(e);
+					console.log("database error");
+					commit("setPublicSongListLoading", false);
+				});
+		},
 
-		// loadSong({ commit }, payload) {
-		// 	commit("setLoadedSong", null);
-		// 	firebase
-		// 		.database()
-		// 		.ref("songs/" + payload)
-		// 		.once("value")
-		// 		.then((data) => {
-		// 			commit("setLoadedSong", data.val());
-		// 		})
-		// 		.catch((e) => {
-		// 			console.log(e);
-		// 		});
-		// },
+		savePublicSongToUser({ getters }, payload) {
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + payload.createdBy + "/songs/" + payload.id)
+					.once("value")
+					.then((data) => {
+						let songToSave = { ...data.val(), favourite: false };
+						songToSave.input.public = false;
+						firebase
+							.database()
+							.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
+							.set(songToSave);
+					})
+					.catch((e) => {
+						console.log(e);
+					});
+			}
+		},
 
 		onUserDataChange({ dispatch, getters }) {
 			if (getters.getUserLogged) {
@@ -156,31 +272,6 @@ export default new Vuex.Store({
 					.off("value");
 			}
 		},
-
-		// loadSongsOnce({ dispatch }) {
-		// 	firebase
-		// 		.database()
-		// 		.ref("songs")
-		// 		.once("value")
-		// 		.then((data) => {
-		// 			dispatch("parseSongs", data);
-		// 		});
-		// },
-
-		// parseSongs({ commit, getters }, payload) {
-		// 	if (getters.getUserLogged) {
-		// 		let songs = [];
-		// 		const obj = payload.val();
-		// 		for (let key in obj) {
-		// 			songs.push({
-		// 				id: key,
-		// 				...obj[key],
-		// 			});
-		// 		}
-		// 		commit("loadSongs", songs);
-		// 		commit("setSongListLoading", false);
-		// 	}
-		// },
 
 		parseUserData({ commit, getters }, payload) {
 			if (getters.getUserLogged) {
@@ -214,10 +305,12 @@ export default new Vuex.Store({
 					})
 					.then(() => {
 						// commit("updateSong", payload);
-						if (payload.data.public) {
-							dispatch("updatePublicSong", payload);
-						} else if (payload.data.createdBy === getters.getUser.uid) {
-							dispatch("deletePublicSong", payload.id);
+						if (payload.data.createdBy === getters.getUser.uid) {
+							if (payload.data.public) {
+								dispatch("setPublicSong", payload);
+							} else {
+								dispatch("deletePublicSong", payload.id);
+							}
 						}
 						commit("setSongListLoading", false);
 					})
@@ -226,19 +319,9 @@ export default new Vuex.Store({
 						commit("setSongListLoading", false);
 					});
 			}
-
-			// .then(() => {
-			// 	commit("updateSong", payload);
-			// 	commit("setSongListLoading", false);
-			// })
-			// .catch((e) => {
-			// 	console.log(e);
-			// 	commit("setSongListLoading", false);
-			// });
 		},
 
-		updatePublicSong({ getters }, payload) {
-			// commit("setSongListLoading", true);
+		setPublicSong({ getters }, payload) {
 			if (getters.getUserLogged) {
 				firebase
 					.database()
@@ -247,6 +330,7 @@ export default new Vuex.Store({
 						title: payload.data.title,
 						author: payload.data.author,
 						createdBy: getters.getUser.uid,
+						modifiedAt: payload.data.modifiedAt,
 					})
 					.catch((e) => {
 						console.log(e);
@@ -256,45 +340,38 @@ export default new Vuex.Store({
 
 		addSong({ dispatch, getters }, payload) {
 			// console.log(commit);
-			if (getters.getUserLogged) {
-				firebase
-					.database()
-					.ref("users/" + getters.getUser.uid + "/songs/")
-					.push(payload)
-					.then((data) => {
-						if (payload.public) {
-							dispatch("addSongToPublic", { key: data.key, ...payload });
-						}
-					})
-					.catch((e) => {
-						console.log(e);
-					});
-			}
-		},
+			console.log("adding song");
+			return new Promise((resolve, reject) => {
+				if (getters.getUserLogged) {
+					let newSong = {
+						author: payload.author,
+						title: payload.title,
+						input: { ...payload.input },
+						sections: payload.sections,
+						createdBy: getters.getUser.uid,
+						createdAt: new Date().toISOString(),
+						modifiedAt: new Date().toISOString(),
+						public: payload.input.public,
+						favourite: false,
+					};
 
-		addSongToPublic({ getters }, payload) {
-			if (getters.getUserLogged) {
-				firebase
-					.database()
-					.ref("publicSongs/" + payload.key)
-					.set({ title: payload.title, author: payload.author, createdBy: getters.getUser.uid })
-					.catch((e) => {
-						console.log(e);
-					});
-			}
+					firebase
+						.database()
+						.ref("users/" + getters.getUser.uid + "/songs/")
+						.push(newSong)
+						.then((data) => {
+							if (newSong.public) {
+								dispatch("setPublicSong", { id: data.key, data: { ...newSong } });
+							}
+							resolve(data.key);
+						})
+						.catch((e) => {
+							console.log(e);
+							reject();
+						});
+				}
+			});
 		},
-
-		// addUserToSong({ getters }, payload) {
-		// 	if (getters.getUserLogged) {
-		// 		firebase
-		// 			.database()
-		// 			.ref("songs/" + payload + "/users/" + getters.getUser.uid)
-		// 			.set(true)
-		// 			.catch((e) => {
-		// 				console.log(e);
-		// 			});
-		// 	}
-		// },
 
 		deleteSong({ dispatch, getters }, payload) {
 			// commit("setSongListLoading", true);
@@ -305,7 +382,17 @@ export default new Vuex.Store({
 					.ref("users/" + getters.getUser.uid + "/songs/" + payload)
 					.remove()
 					.then(() => {
-						dispatch("deletePublicSong", payload);
+						firebase
+							.database()
+							.ref("publicSongs/" + payload)
+							.once("value")
+							.then((data) => {
+								let obj = data.val();
+
+								if (obj !== null && obj.createdBy === getters.getUser.uid) {
+									dispatch("deletePublicSong", payload);
+								}
+							});
 					})
 					.catch((e) => {
 						console.log(e);
@@ -314,17 +401,17 @@ export default new Vuex.Store({
 			}
 		},
 
-		deletePublicSong({ getters }, payload) {
-			// commit("setSongListLoading", true);
-			// console.log(commit);
+		deletePublicSong({ commit, getters }, payload) {
 			if (getters.getUserLogged) {
 				firebase
 					.database()
 					.ref("publicSongs/" + payload)
 					.remove()
+					.then(() => {
+						commit("deletePublicSong", payload);
+					})
 					.catch((e) => {
 						console.log(e);
-						// commit("setSongListLoading", false);
 					});
 			}
 		},

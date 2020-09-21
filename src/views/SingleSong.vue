@@ -17,6 +17,14 @@ export default {
     return { transitioning: false };
   },
 
+  methods: {
+    updateNavigationTitle() {
+      if (this.song !== null && this.song !== undefined) {
+        this.$store.commit("setCurrentPage", this.song.title);
+      }
+    },
+  },
+
   computed: {
     id() {
       return this.$route.params.id;
@@ -32,22 +40,34 @@ export default {
 
     ...mapGetters({
       songListLoading: "getSongListLoading",
+      loadedSong: "getLoadedSong",
     }),
   },
-
   components: {
     "song-sheet": SongSheet,
   },
 
+  updated() {
+    this.$store.commit(
+      "setCurrentPage",
+      this.song.title ? this.song.title : ""
+    );
+  },
+
+  created() {
+    this.updateNavigationTitle();
+  },
+
   watch: {
     "$route.params.id": function () {
+      this.updateNavigationTitle();
       this.transitioning = true;
-
       setTimeout(() => {
         this.transitioning = false;
       }, 80);
     },
     song: function () {
+      this.updateNavigationTitle();
       if (this.song === null || this.song === undefined) {
         this.$router.push("/song-book").catch(() => {});
       }
