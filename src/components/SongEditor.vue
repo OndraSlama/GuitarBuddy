@@ -51,7 +51,7 @@
 							</v-list>
 						</v-menu>
 					</template>
-					<span>Aditional text tools</span>
+					<span>Aditional tools</span>
 				</v-tooltip>
 
 				<v-spacer></v-spacer>

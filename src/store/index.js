@@ -196,7 +196,7 @@ export default new Vuex.Store({
 				.ref("users/" + payload.createdBy + "/songs/" + payload.id)
 				.once("value")
 				.then((data) => {
-					commit("setLoadedSong", data.val());
+					commit("setLoadedSong", { ...data.val(), id: data.key });
 					commit("setSongLoading", false);
 				})
 				.catch((e) => {

@@ -2,7 +2,7 @@
 	<div>
 		<v-skeleton-loader v-show="transitioning || song == null" type="article"></v-skeleton-loader>
 		<v-scroll-x-transition hide-on-leave>
-			<v-row no-gutters v-if="!transitioning && song !== null">
+			<v-row v-if="!transitioning && song !== null">
 				<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 4" style="position: relative">
 					<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="saveSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" type="edit"></song-editor>
 					<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
@@ -12,7 +12,7 @@
 				</v-col>
 				<v-divider class="hidden-md-and-up"></v-divider>
 				<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 8">
-					<song-sheet :song="formatedSong" :expanded="expanded" class="pl-md-6"></song-sheet>
+					<song-sheet :song="formatedSong" type="editor-view" :expanded="expanded" class="pl-md-6"></song-sheet>
 				</v-col>
 			</v-row>
 		</v-scroll-x-transition>
