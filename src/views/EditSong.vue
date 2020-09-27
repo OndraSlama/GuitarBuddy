@@ -4,7 +4,7 @@
 		<v-scroll-x-transition hide-on-leave>
 			<v-row v-if="!transitioning && song !== null">
 				<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 4" style="position: relative">
-					<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="saveSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" type="edit"></song-editor>
+					<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="saveSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" v-on:back="$router.push('/song/' + id)" type="edit"></song-editor>
 					<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
 						<v-icon v-if="expanded">mdi-chevron-left</v-icon>
 						<v-icon v-else>mdi-chevron-right</v-icon>

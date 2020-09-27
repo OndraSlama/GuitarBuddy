@@ -65,7 +65,7 @@
 								<v-list-item-group class="d-none" key="item-group"></v-list-item-group>
 								<component :is="filters.groupByAuthor ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupByAuthor ? 'mdi-account-circle-outline' : ''">
 									<template v-slot:activator v-if="filters.groupByAuthor">
-										<v-list-item-title>{{ group.group }}</v-list-item-title>
+										<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
 									</template>
 									<!-- <v-list-group v-for="(group) in groupedSongs(filters)" :key="group.group"> -->
 									<v-scroll-x-transition group hide-on-leave>
