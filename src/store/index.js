@@ -89,11 +89,15 @@ export default new Vuex.Store({
 					const titleOrder = filters.songsAscOrder ? normalizeString(a.title) < normalizeString(b.title) : normalizeString(a.title) > normalizeString(b.title);
 					const authorOrder = filters.authorsAscOrder ? normalizeString(a.author) < normalizeString(b.author) : normalizeString(a.author) > normalizeString(b.author);
 					const dateOrder = filters.songsDateOrder ? normalizeString(a.modifiedAt) < normalizeString(b.modifiedAt) : normalizeString(a.modifiedAt) > normalizeString(b.modifiedAt);
+					const forksOrder = filters.songsForksOrder ? (a.forks ?? 0) < (b.forks ?? 0) : (a.forks ?? 0) > (b.forks ?? 0);
 					if (filters.orderOption == 1) {
 						return authorOrder ? 1 : -1;
 					}
 					if (filters.orderOption == 2) {
 						return dateOrder ? 1 : -1;
+					}
+					if (filters.orderOption == 3) {
+						return forksOrder ? 1 : -1;
 					}
 					return titleOrder ? 1 : -1;
 				});
@@ -231,7 +235,7 @@ export default new Vuex.Store({
 				});
 		},
 
-		savePublicSongToUser({ getters }, payload) {
+		savePublicSongToUser({ getters, dispatch }, payload) {
 			if (getters.getUserLogged) {
 				firebase
 					.database()
@@ -245,10 +249,25 @@ export default new Vuex.Store({
 							.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
 							.set(songToSave);
 					})
+					.then(() => {
+						dispatch("incrementForksInPublicSong", { ...payload });
+					})
 					.catch((e) => {
 						console.log(e);
 					});
 			}
+		},
+
+		incrementForksInPublicSong(_, payload) {
+			firebase
+				.database()
+				.ref("publicSongs/" + payload.id)
+				.update({
+					forks: (payload.forks ?? -1) + 1,
+				})
+				.catch((e) => {
+					console.log(e);
+				});
 		},
 
 		onUserDataChange({ dispatch, getters }) {
@@ -331,6 +350,7 @@ export default new Vuex.Store({
 						author: payload.data.author,
 						createdBy: getters.getUser.uid,
 						modifiedAt: payload.data.modifiedAt,
+						forks: payload.data.forks ?? 0,
 					})
 					.catch((e) => {
 						console.log(e);
@@ -339,8 +359,6 @@ export default new Vuex.Store({
 		},
 
 		addSong({ dispatch, getters }, payload) {
-			// console.log(commit);
-			console.log("adding song");
 			return new Promise((resolve, reject) => {
 				if (getters.getUserLogged) {
 					let newSong = {
@@ -351,6 +369,7 @@ export default new Vuex.Store({
 						createdBy: getters.getUser.uid,
 						createdAt: new Date().toISOString(),
 						modifiedAt: new Date().toISOString(),
+						forks: 0,
 						public: payload.input.public,
 						favourite: false,
 					};

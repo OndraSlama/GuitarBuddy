@@ -13,7 +13,12 @@
         </v-toolbar-items>
         <v-spacer></v-spacer>
         <v-toolbar-items>
-          <v-switch class="mt-2" v-model="tempSource.public" inset label="Public"></v-switch>
+          <v-switch
+            class="mt-2"
+            v-model="tempSource.public"
+            inset
+            label="Public"
+          ></v-switch>
         </v-toolbar-items>
       </v-toolbar>
       <v-text-field
@@ -24,7 +29,11 @@
         hide-details="auto"
         outlined
       ></v-text-field>
-      <v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field>
+      <v-text-field
+        v-model="tempSource.author"
+        label="Author"
+        outlined
+      ></v-text-field>
 
       <v-textarea
         outlined
@@ -36,8 +45,16 @@
         auto-grow
       ></v-textarea>
 
-      <v-toolbar class="elevation-0" :color="$vuetify.theme.dark ? '#121212' : ''">
-        <v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
+      <v-toolbar
+        class="elevation-0"
+        :color="$vuetify.theme.dark ? '#121212' : ''"
+      >
+        <v-btn-toggle
+          v-model="tempSource.chordsAboveText"
+          rounded
+          mandatory
+          class="ml-n5"
+        >
           <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn icon v-bind="attrs" v-on="on">
@@ -59,20 +76,34 @@
           <template v-slot:activator="{ on: onMenu }">
             <v-menu rounded="large" transition="slide-y-transition" bottom>
               <template v-slot:activator="{ on: onTooltip }">
-                <v-btn icon class="ml-2" large v-on="{ ...onMenu, ...onTooltip }">
+                <v-btn
+                  icon
+                  class="ml-2"
+                  large
+                  v-on="{ ...onMenu, ...onTooltip }"
+                >
                   <v-icon>mdi-playlist-edit</v-icon>
                 </v-btn>
               </template>
               <v-list class="py-0">
-                <v-list-item @click.stop.prevent="tempSource.trimLines = !tempSource.trimLines">
-                  <v-checkbox v-model="tempSource.trimLines" @click.stop.prevent></v-checkbox>
+                <v-list-item
+                  @click.stop.prevent="
+                    tempSource.trimLines = !tempSource.trimLines
+                  "
+                >
+                  <v-checkbox
+                    v-model="tempSource.trimLines"
+                    @click.stop.prevent
+                  ></v-checkbox>
                   <v-list-item-title>Trim lines</v-list-item-title>
                 </v-list-item>
                 <v-list-item
                   @click.stop.prevent="variableToFixed"
                   :disabled="!tempSource.chordsAboveText"
                 >
-                  <v-list-item-title>Fix Chord Alignment (experimental)</v-list-item-title>
+                  <v-list-item-title
+                    >Fix Chord Alignment (experimental)</v-list-item-title
+                  >
                 </v-list-item>
                 <!-- <v-list-item @click.stop.prevent="fixedToVariable">
 									<v-list-item-title>Fixed width -> Variable width spaces</v-list-item-title>
@@ -110,6 +141,7 @@
 <script>
 import { mapGetters } from "vuex";
 // import calculateSize from "calculate-size";
+import { Chord } from "@tonaljs/tonal";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
 export default {
@@ -183,8 +215,6 @@ export default {
     },
 
     variableToFixed() {
-      console.log(this.relativeTextWidth(this.tempSource.text));
-      console.log(this.tempSource.text.charCodeAt(0));
       let lines = this.tempSource.text.split("\n");
       lines.forEach((line, index) => {
         if (this.isChordsLine(line) && index + 1 < lines.length) {
@@ -224,13 +254,6 @@ export default {
               lines[index] = lines[index].insert(pos, lineParts[i]);
             }
           }
-
-          console.log(line.charCodeAt(0));
-          console.log(index, lineParts);
-          console.log(index, startPos);
-          console.log(index, isWord);
-          console.log(index, positionInLine);
-          console.log(index, lines[index + 1]);
         }
       });
 
@@ -293,7 +316,7 @@ export default {
         } else if (chordsAboveText && this.isChordsLine(line)) {
           lineType = "chords";
           while ((match = this.aloneChordsregex.exec(line))) {
-            chords.push([match.index, match[0]]);
+            chords.push([match.index, Chord.get(match[0].replace("mi", "m"))]);
           }
         } else if (!chordsAboveText) {
           while ((bracketMatch = /\[(.*?)\]/.exec(line))) {
@@ -303,10 +326,13 @@ export default {
                 let lastChord = chordsInBracket[chordsInBracket.length - 1];
                 chordsInBracket.push([
                   lastChord[0] + lastChord[1].length + 1,
-                  match[0],
+                  Chord.get(match[0].replace("mi", "m")),
                 ]);
               } else {
-                chordsInBracket.push([bracketMatch.index, match[0]]);
+                chordsInBracket.push([
+                  bracketMatch.index,
+                  Chord.get(match[0].replace("mi", "m")),
+                ]);
               }
             }
 
@@ -330,6 +356,8 @@ export default {
           chords: chords,
         });
       });
+
+      console.log(lineArray);
 
       if (!chordsAboveText) {
         return lineArray;

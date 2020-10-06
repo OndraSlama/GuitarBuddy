@@ -1,8 +1,14 @@
 <template>
   <div>
-    <v-skeleton-loader v-show="songListLoading || song == null" type="article"></v-skeleton-loader>
+    <v-skeleton-loader
+      v-show="songListLoading || song == null"
+      type="article"
+    ></v-skeleton-loader>
     <v-scroll-x-transition hide-on-leave>
-      <song-sheet v-if="!songListLoading && !transitioning && song != null" :song="song"></song-sheet>
+      <song-sheet
+        v-if="!songListLoading && !transitioning && song != null"
+        :song="song"
+      ></song-sheet>
     </v-scroll-x-transition>
   </div>
 </template>
@@ -20,7 +26,10 @@ export default {
   methods: {
     updateNavigationTitle() {
       if (this.song !== null && this.song !== undefined) {
-        this.$store.commit("setCurrentPage", this.song.title);
+        this.$store.commit(
+          "setCurrentPage",
+          this.song?.title + " - " + (this.song.author.trim() || "Unknown")
+        );
       }
     },
   },
@@ -48,10 +57,7 @@ export default {
   },
 
   updated() {
-    this.$store.commit(
-      "setCurrentPage",
-      this.song.title ? this.song.title : ""
-    );
+    this.updateNavigationTitle();
   },
 
   created() {
