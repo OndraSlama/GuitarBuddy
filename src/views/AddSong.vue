@@ -3,7 +3,7 @@
 		<!-- <p class="text-h3 text--secondary text-start font-weight-light text-sm-h2 mb-6">Add new song</p> -->
 		<v-row>
 			<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 4" style="position: relative">
-				<song-editor v-on:song-submited="importSong" v-on:input="formatedSong = $event" v-on:back="$router.push('/')" type="add"> </song-editor>
+				<song-editor v-on:song-submited="addSong" v-on:input="formatedSong = $event" v-on:back="$router.push('/')" type="add"> </song-editor>
 				<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
 					<v-icon v-if="expanded">mdi-chevron-left</v-icon>
 					<v-icon v-else>mdi-chevron-right</v-icon>
@@ -16,6 +16,7 @@
 				</v-scroll-y-transition>
 			</v-col>
 		</v-row>
+		<v-snackbar v-model="snackbar"> Song created </v-snackbar>
 	</div>
 </template>
 
@@ -29,10 +30,11 @@ export default {
 		return {
 			formatedSong: undefined,
 			expanded: false,
+			snackbar: false,
 		};
 	},
 	methods: {
-		importSong(songInput) {
+		addSong(songInput) {
 			if (this.formatedSong == undefined) {
 				alert("Undefined formated song");
 				return;
@@ -43,7 +45,7 @@ export default {
 					...songInput,
 				},
 			};
-			this.$store.dispatch("addSong", newSong);
+			this.$store.dispatch("addSong", newSong).then(() => (this.snackbar = true));
 		},
 	},
 	computed: {

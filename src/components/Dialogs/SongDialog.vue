@@ -1,5 +1,5 @@
 <template>
-	<v-dialog v-model="dialogOpened" transition="dialog-transition" :fullscreen="size.xs">
+	<v-dialog v-model="dialogOpened" transition="dialog-transition" :fullscreen="viewportSize.xs">
 		<div v-if="song">
 			<v-card height="100vh">
 				<v-skeleton-loader v-show="songLoading" type="card-heading"></v-skeleton-loader>
@@ -22,9 +22,6 @@ export default {
 	props: ["value", "song"],
 
 	computed: {
-		size() {
-			return this.$vuetify.breakpoint;
-		},
 		...mapGetters({
 			songLoading: "getSongLoading",
 		}),

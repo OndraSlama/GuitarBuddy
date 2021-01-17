@@ -8,11 +8,15 @@ import DeleteDialog from "./components/Dialogs/DeleteDialog";
 import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog";
 import fullscreen from "vue-fullscreen";
 import moment from "moment";
+import vueInsomnia from "vue-insomnia";
+import viewportSize from "./mixins/viewportSize";
 
 Vue.prototype.$moment = moment;
 Vue.config.productionTip = false;
 
+Vue.use(vueInsomnia);
 Vue.use(fullscreen);
+Vue.mixin(viewportSize);
 Vue.component("delete-dialog", DeleteDialog);
 Vue.component("edit-public-song-dialog", EditPublicSongDialog);
 
@@ -33,7 +37,7 @@ new Vue({
 			measurementId: "G-JDZY638NH4",
 		});
 
-		store.dispatch("onUserStatusChange");
+		store.dispatch("setUserStatusChange");
 	},
 }).$mount("#app");
 

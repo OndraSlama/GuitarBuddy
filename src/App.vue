@@ -31,9 +31,6 @@ export default {
 		scrollbarTheme() {
 			return this.$vuetify.theme.dark ? "dark" : "light";
 		},
-		size() {
-			return this.$vuetify.breakpoint;
-		},
 	},
 };
 </script>
