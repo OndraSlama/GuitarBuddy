@@ -1,60 +1,84 @@
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
-
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
-
-    <v-main>
-      <HelloWorld/>
-    </v-main>
-  </v-app>
+	<v-app style="overflow: hidden">
+		<nav-bar></nav-bar>
+		<song-list></song-list>
+		<v-main class="pt-0">
+			<v-scroll-y-transition hide-on-leave>
+				<router-view class="mt-15 pa-sm-5 ma-2"></router-view>
+			</v-scroll-y-transition>
+		</v-main>
+		<app-footer></app-footer>
+	</v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
-
+import NavBar from "../src/components/NavBar";
+import Footer from "../src/components/Footer";
+import SongList from "../src/components/SongList";
 export default {
-  name: 'App',
+	name: "App",
 
-  components: {
-    HelloWorld,
-  },
+	components: {
+		"nav-bar": NavBar,
+		"app-footer": Footer,
+		"song-list": SongList,
+	},
 
-  data: () => ({
-    //
-  }),
+	data: () => ({
+		//
+	}),
+	computed: {
+		scrollbarTheme() {
+			return this.$vuetify.theme.dark ? "dark" : "light";
+		},
+	},
 };
 </script>
+
+<style>
+.monospace {
+	font-family: "Roboto Mono", monospace;
+}
+.chord {
+	color: rgb(255, 92, 92);
+}
+/* .verse {
+	color: rgb(156, 156, 156);
+} */
+/* .chorus {
+	color: rgb(116, 124, 38);
+}
+.bridge {
+	color: rgb(79, 93, 155);
+} */
+/* .verse .name {
+	color: rgb(156, 156, 156);
+}
+.chorus .name {
+	color: rgb(50, 104, 12);
+}
+.bridge .name {
+	color: rgb(92, 102, 134);
+} */
+.thin-border {
+	border: 1px solid rgb(104, 104, 104);
+}
+
+/* Scroll bar */
+::-webkit-scrollbar {
+	width: 4px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.397);
+	border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.603);
+}
+</style>
