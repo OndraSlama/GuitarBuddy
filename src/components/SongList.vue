@@ -62,26 +62,31 @@
 				</v-menu>
 
 				<v-scroll-x-reverse-transition hide-on-leave>
-					<v-btn v-if="!toggleSelectionTransition" text :icon="selectionEnabled" @click="toggleSelection">
+					<v-btn v-if="!toggleSelectionTransition" text @click="toggleSelection">
 						<v-icon left v-if="!selectionEnabled">mdi-format-list-bulleted</v-icon>
 						<v-icon v-else>mdi-playlist-remove</v-icon>
 						<span v-if="!selectionEnabled">Select...</span>
+						<span v-else>Cancel select</span>
 					</v-btn>
 				</v-scroll-x-reverse-transition>
+			</v-toolbar>
 
-				<v-spacer></v-spacer>
-				<v-fab-transition group hide-on-leave>
-					<v-btn icon v-if="selectionEnabled" :key="'delete'" @click="askIfDeleteSongs">
+			<v-scroll-x-reverse-transition hide-on-leave>
+				<v-toolbar v-if="selectionEnabled" class="elevation-0" height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
+					<v-btn icon :key="'playlist'">
+						<v-icon>mdi-playlist-music-outline</v-icon>
+					</v-btn>
+					<v-btn icon :key="'delete'" @click="askIfDeleteSongs">
 						<v-icon>mdi-delete-outline</v-icon>
 					</v-btn>
-					<v-btn icon v-if="selectionEnabled" :key="'favourite'" @click="onSetFavouriteSelected">
+					<v-btn icon :key="'favourite'" @click="onSetFavouriteSelected">
 						<v-icon>mdi-star-outline</v-icon>
 					</v-btn>
-					<v-btn icon v-if="selectionEnabled" :key="'unfavourite'" @click="onUnsetFavouriteSelected">
+					<v-btn icon :key="'unfavourite'" @click="onUnsetFavouriteSelected">
 						<v-icon>mdi-star</v-icon>
 					</v-btn>
-				</v-fab-transition>
-			</v-toolbar>
+				</v-toolbar>
+			</v-scroll-x-reverse-transition>
 			<delete-dialog v-model="deleteSongsDialogOpened" v-on:accept="onDeleteSelected()" />
 
 			<!-- <v-sheet class="mx-3">
@@ -97,7 +102,6 @@
 				</v-tab>
 			</v-tabs>
 
-
 			<v-list>
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-scroll-y-transition group hide-on-leave>
@@ -106,7 +110,8 @@
 							<v-list-item-title>
 								<v-row>
 									<v-col cols="2" v-if="!selectionEnabled">
-										<v-icon v-if="filters.groupByAuthor" class="mr-3">mdi-account-circle-outline</v-icon>
+										<v-icon v-if="filters.groupByPlayBooks" class="mr-3">mdi-playlist-music-outline</v-icon>
+										<v-icon v-else-if="filters.groupByAuthor" class="mr-3">mdi-account-circle-outline</v-icon>
 										<v-icon v-else-if="group.group == 'Collection'" class="mr-3">mdi-playlist-music-outline</v-icon>
 										<v-icon v-else class="mr-3">mdi-star-outline</v-icon>
 									</v-col>
@@ -169,7 +174,6 @@
 										</template>
 										<v-list class="py-0">
 											<v-list-item @click.stop="askIfEditSong(song)">
-												<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 												<v-list-item-title>Edit</v-list-item-title>
 												<v-list-item-icon>
 													<v-icon>mdi-pencil-outline</v-icon>
@@ -179,6 +183,12 @@
 												<v-list-item-title>Delete</v-list-item-title>
 												<v-list-item-icon>
 													<v-icon>mdi-delete-outline</v-icon>
+												</v-list-item-icon>
+											</v-list-item>
+											<v-list-item @click.stop="askToSelectSongbook(song)">
+												<v-list-item-title>Add To Songbook</v-list-item-title>
+												<v-list-item-icon>
+													<v-icon>mdi-playlist-music-outline</v-icon>
 												</v-list-item-icon>
 											</v-list-item>
 										</v-list>
@@ -191,7 +201,10 @@
 				</v-scroll-y-transition>
 			</v-list>
 		</v-navigation-drawer>
+
+		<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 		<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
+		<select-songbook-dialog v-model="selecSongbookDialogOpened" @onSelected="addSongToSongBook" />
 	</div>
 </template>
 
@@ -209,6 +222,7 @@ export default {
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
 			deleteSongsDialogOpened: false,
+			selecSongbookDialogOpened: false,
 			groupSelection: {},
 			toggleSelectionTransition: false,
 		};
@@ -295,8 +309,19 @@ export default {
 			}
 		},
 
+		askToSelectSongbook(song) {
+			this.selecSongbookDialogOpened = true;
+			this.currentSong = song;
+		},
+
 		deleteSong(songId) {
 			this.$store.dispatch("deleteSong", songId);
+		},
+
+		addSongToSongBook(songbook) {
+			// console.log(this.currentSong.id);
+			// console.log(songbook);
+			this.$store.dispatch("addSongToSongbook", {"id": this.currentSong.id, "songbook": songbook});
 		},
 
 		askIfDeleteSongs() {

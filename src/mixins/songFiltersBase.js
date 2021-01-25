@@ -2,7 +2,8 @@ export default {
 	data() {
 		return {
 			filters: {
-				search: "",
+                search: "",
+                groupByPlayBooks: false,
 				groupByAuthor: false,
 				titleNameOrder: false,
 				authorNameOrder: false,

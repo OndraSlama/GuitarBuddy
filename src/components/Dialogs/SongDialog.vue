@@ -12,33 +12,17 @@
 
 <script>
 import SongSheet from "../../components/SongSheet";
+import dialogBase from "../../mixins/dialogBase";
 import { mapGetters } from "vuex";
+
 export default {
-	data() {
-		return {
-			dialogOpened: false,
-		};
-	},
-	props: ["value", "song"],
+	mixins: [dialogBase],
+	props: ["song"],
 
 	computed: {
 		...mapGetters({
 			songLoading: "getSongLoading",
 		}),
-	},
-
-	created() {
-		this.dialogOpened = this.value;
-	},
-
-	watch: {
-		value: function(val) {
-			this.dialogOpened = val;
-		},
-
-		dialogOpened: function(val) {
-			this.$emit("input", val);
-		},
 	},
 
 	components: {

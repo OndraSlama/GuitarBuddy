@@ -9,7 +9,7 @@ export default new Vuex.Store({
 	state: {
 		currentPage: "",
 		publicSongs: [],
-		userPlayBooks: {},
+		userSongBooks: {},
 		userSongs: [],
 		authors: [],
 		loadedSong: null,
@@ -39,7 +39,7 @@ export default new Vuex.Store({
 		},
 
 		getUser: (state) => state.user,
-		getUserPlayBooks: (state) => state.userPlayBooks,
+		getUserSongBooks: (state) => state.userSongBooks,
 		getUserSongs: (state) => state.userSongs,
 		getAuthors: (state) => state.authors,
 		getPublicSongs: (state) => state.publicSongs,
@@ -63,7 +63,7 @@ export default new Vuex.Store({
 				let groups = [];
 				// Determine groups for every song
 				if (filters.groupByPlayBooks ?? false){
-					let playbooks = getters.getUserPlayBooks;
+					let playbooks = getters.getUserSongBooks;
 					for (const key in playbooks) {
 						if (Object.prototype.hasOwnProperty.call(playbooks[key], song["id"])) {
 							if (!groups.includes(key)){
@@ -192,9 +192,8 @@ export default new Vuex.Store({
 		setUserSongs(state, userSongs) {
 			state.userSongs = userSongs;
 		},
-		setUserPlayBooks(state, userPlayBooks){
-			state.userPlayBooks = userPlayBooks;
-			console.log(userPlayBooks);
+		setUserSongBooks(state, userSongBooks){
+            state.userSongBooks = {...userSongBooks}
 		},
 		setAuthors(state, authors){
 			state.authors = authors
@@ -290,7 +289,7 @@ export default new Vuex.Store({
 							commit("setUserSongs", userSongs);
 
 							// Parse user playbooks							
-							commit("setUserPlayBooks", {...obj["playBooks"]});
+							commit("setUserSongBooks", {...obj["playBooks"]});
 						}
 					});
 			}
@@ -458,10 +457,21 @@ export default new Vuex.Store({
 		},
 
 		setFavourite({ getters }, payload) {
-			firebase
-				.database()
-				.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
-				.update({ favourite: payload.value });
+            if (getters.getUserLogged) {
+                firebase
+                    .database()
+                    .ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
+                    .update({ favourite: payload.value });
+            }
+        },
+        
+		addSongToSongbook({ getters }, payload) {
+            if (getters.getUserLogged) {
+                firebase
+                    .database()
+                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
+                    .update({ [payload.id]: true });		                
+            }
 		},
 
 

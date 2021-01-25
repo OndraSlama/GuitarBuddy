@@ -6,6 +6,7 @@ import vuetify from "./plugins/vuetify";
 import * as firebase from "firebase";
 import DeleteDialog from "./components/Dialogs/DeleteDialog";
 import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog";
+import SelectSongbookDialog from "./components/Dialogs/SelectSongbookDialog";
 import fullscreen from "vue-fullscreen";
 import moment from "moment";
 import vueInsomnia from "vue-insomnia";
@@ -19,6 +20,7 @@ Vue.use(fullscreen);
 Vue.mixin(viewportSize);
 Vue.component("delete-dialog", DeleteDialog);
 Vue.component("edit-public-song-dialog", EditPublicSongDialog);
+Vue.component("select-songbook-dialog", SelectSongbookDialog);
 
 new Vue({
 	router,
