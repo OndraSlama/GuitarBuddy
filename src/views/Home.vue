@@ -9,12 +9,12 @@
 					<v-text-field v-model="filters.search" dense flat hide-details prepend-inner-icon="mdi-magnify" outlined></v-text-field>
 					<v-toolbar class="elevation-0 my-3" height="40px" :color="$vuetify.theme.dark ? '#121212' : ''">
 						<v-toolbar-items>
-							<v-btn text :icon="viewportSize.xs" :color="filters.groupByAuthor ? '' : 'primary'" @click="filters.groupByAuthor = false">
+							<v-btn text :icon="viewportSize.xs" :color="filters.groupBy == 'author' ? '' : 'primary'" @click="filters.groupBy = 'favourite'">
 								<v-icon left>mdi-music-note-outline</v-icon>
 								<span class="d-none d-sm-flex">Songs</span>
 							</v-btn>
 
-							<v-btn text :icon="viewportSize.xs" :color="filters.groupByAuthor ? 'primary' : ''" @click="filters.groupByAuthor = true">
+							<v-btn text :icon="viewportSize.xs" :color="filters.groupBy == 'author' ? 'primary' : ''" @click="filters.groupBy = 'author'">
 								<v-icon :left="viewportSize.smAndUp">mdi-account-outline</v-icon>
 								<span class="d-none d-sm-flex">Authors</span>
 							</v-btn>
@@ -32,36 +32,36 @@
 									<v-list-item @click.stop="onTitleName">
 										<v-list-item-title>Songs</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.titleNameOrder" :color="filters.orderOption == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-											<v-icon v-show="!filters.titleNameOrder" :color="filters.orderOption == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+											<v-icon v-show="filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
+											<v-icon v-show="!filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 									<v-list-item @click.stop="onAuthorName">
 										<v-list-item-title>Authors</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.authorNameOrder" :color="filters.orderOption == 'authorName' || filters.groupByAuthor ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-											<v-icon v-show="!filters.authorNameOrder" :color="filters.orderOption == 'authorName' || filters.groupByAuthor ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+											<v-icon v-show="filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
+											<v-icon v-show="!filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 									<v-list-item @click.stop="onDateModified">
 										<v-list-item-title>Date modified</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderOption == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-											<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderOption == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+											<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
+											<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 									<v-list-item @click.stop="onDateCreated">
 										<v-list-item-title>Date created</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.createdDateOrder" :color="filters.orderOption == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-											<v-icon v-show="!filters.createdDateOrder" :color="filters.orderOption == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+											<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
+											<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 									<v-list-item @click.stop="onForks">
 										<v-list-item-title>Popularity</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.forksOrder" :color="filters.orderOption == 'forks' ? 'primary' : ''">mdi-sort-numeric-descending</v-icon>
-											<v-icon v-show="!filters.forksOrder" :color="filters.orderOption == 'forks' ? 'primary' : ''">mdi-sort-numeric-ascending</v-icon>
+											<v-icon v-show="filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-descending</v-icon>
+											<v-icon v-show="!filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-ascending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 								</v-list>
@@ -79,8 +79,8 @@
 							<v-scroll-x-transition group hide-on-leave>
 								<v-list-group class="d-none" key="group"></v-list-group>
 								<v-list-item-group class="d-none" key="item-group"></v-list-item-group>
-								<component :is="filters.groupByAuthor ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupByAuthor ? 'mdi-account-circle-outline' : ''">
-									<template v-slot:activator v-if="filters.groupByAuthor">
+								<component :is="filters.groupBy == 'author' ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
+									<template v-slot:activator v-if="filters.groupBy == 'author'">
 										<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
 									</template>
 									<!-- <v-list-group v-for="(group) in groupedSongs(filters)" :key="group.group"> -->
@@ -88,10 +88,10 @@
 										<!-- <template > -->
 										<!-- <v-divider class="mx-3" :key="n" v-if="n !== 0"></v-divider> -->
 
-										<v-list-item v-for="song in group.songs" :two-line="!filters.groupByAuthor" @click.stop="openSongDialog(song)" :key="song.id">
+										<v-list-item v-for="song in group.songs" :two-line="!filters.groupBy == 'author'" @click.stop="openSongDialog(song)" :key="song.id">
 											<v-list-item-content>
 												<v-list-item-title>{{ song.title }}</v-list-item-title>
-												<v-list-item-subtitle v-if="!filters.groupByAuthor">{{ song.author }}</v-list-item-subtitle>
+												<v-list-item-subtitle v-if="!filters.groupBy == 'author'">{{ song.author }}</v-list-item-subtitle>
 											</v-list-item-content>
 
 											<v-tooltip top>
@@ -174,7 +174,7 @@ export default {
 	name: "Home",
 	mixins: [filtersBase],
 	data() {
-		return {			
+		return {
 			dialogOpened: false,
 			openedSong: undefined,
 		};
@@ -190,7 +190,7 @@ export default {
 		},
 		addToCollection(song) {
 			this.$store.dispatch("savePublicSongToUser", song);
-		},		
+		},
 
 		alreadyInCollection(publicSongId) {
 			if (this.userLogged) {
