@@ -292,7 +292,16 @@ export default new Vuex.Store({
                             console.log("downloading data from firebase:");
                             console.log(obj);
                             
-							commit("setUserSongs", userSongs);					
+                            commit("setUserSongs", userSongs);
+
+                            let songbooks = obj["playBooks"];
+                            for (const key in songbooks) {
+                                for (const songid in songbooks[key]) {
+                                    if (!songbooks[key][songid]){
+                                        delete songbooks[key][songid]
+                                    }
+                                }                                  
+                            }
 							commit("setUserSongBooks", {...obj["playBooks"]});
 						}
 					});
@@ -478,7 +487,22 @@ export default new Vuex.Store({
                 firebase
                     .database()
                     .ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
-                    .update({ [payload.id]: true });		                
+                    .update({ [payload.id]: true })
+                    .catch((e) => {
+                        console.log(e);
+                    });		                
+            }
+        },
+        
+		removeSongFromSongbook({ getters }, payload) {
+            if (getters.getUserLogged) {
+                firebase
+                    .database()
+                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
+                    .update({ [payload.id]: false })
+                    .catch((e) => {
+                        console.log(e);
+                    });		                
             }
 		},
 
