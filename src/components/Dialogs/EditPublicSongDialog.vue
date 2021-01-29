@@ -18,13 +18,9 @@
 
 <script>
 import { mapGetters } from "vuex";
+import dialogBase from "../../mixins/dialogBase";
 export default {
-	data() {
-		return {
-			dialogOpened: true,
-		};
-	},
-	props: ["value"],
+	mixins: [dialogBase],
 
 	methods: {
 		onAgree() {
@@ -36,22 +32,6 @@ export default {
 	computed: {
 		...mapGetters({}),
 	},
-
-	created() {
-		this.dialogOpened = this.value;
-	},
-
-	watch: {
-		value: function(val) {
-			this.dialogOpened = val;
-		},
-
-		dialogOpened: function(val) {
-			this.$emit("input", val);
-		},
-	},
-
-	components: {},
 };
 </script>
 

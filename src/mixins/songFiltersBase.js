@@ -2,14 +2,14 @@ export default {
 	data() {
 		return {
 			filters: {
-				search: "",
-				groupByAuthor: false,
+                search: "",
+				groupBy: "favourite",
 				titleNameOrder: false,
 				authorNameOrder: false,
 				modifiedDateOrder: false,
 				createdDateOrder: false,
 				forksOrder: false,
-				orderOption: "titleName",
+				orderBy: "titleName",
 				lastRow: 5,
 			},
 
@@ -19,26 +19,26 @@ export default {
 	methods: {
 		onTitleName() {
 			this.filters.titleNameOrder = !this.filters.titleNameOrder;
-			this.filters.orderOption = 'titleName';
+			this.filters.orderBy = 'titleName';
 		},
 		onAuthorName() {
 			this.filters.authorNameOrder = !this.filters.authorNameOrder;
-			this.filters.orderOption = 'authorName';
+			this.filters.orderBy = 'authorName';
 		},
 
 		onDateModified() {
 			this.filters.modifiedDateOrder = !this.filters.modifiedDateOrder;
-			this.filters.orderOption = 'dateModified';
+			this.filters.orderBy = 'dateModified';
 		},
 
 		onDateCreated() {
 			this.filters.createdDateOrder = !this.filters.createdDateOrder;
-			this.filters.orderOption = 'dateCreated';
+			this.filters.orderBy = 'dateCreated';
 		},
 
 		onForks() {
 			this.filters.forksOrder = !this.filters.forksOrder;
-			this.filters.orderOption = 'forks';
+			this.filters.orderBy = 'forks';
 		},
 	}
 

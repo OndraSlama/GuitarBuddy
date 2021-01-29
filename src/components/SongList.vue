@@ -11,13 +11,13 @@
 
 				<v-tooltip top>
 					<template v-slot:activator="{ on, attrs }">
-						<v-btn v-bind="attrs" v-on="on" @click="filters.groupByAuthor = !filters.groupByAuthor" icon large class="ml-1">
-							<v-icon v-if="!filters.groupByAuthor">mdi-account-details-outline</v-icon>
-							<v-icon v-if="filters.groupByAuthor">mdi-playlist-star</v-icon>
+						<v-btn v-bind="attrs" v-on="on" @click="filters.groupBy = filters.groupBy == 'favourite' ? 'author' : 'favourite'" icon large class="ml-1" :disabled="filters.groupBy == 'songbook'">
+							<v-icon v-if="filters.groupBy == 'author'">mdi-playlist-star</v-icon>
+							<v-icon v-else>mdi-account-details-outline</v-icon>
 						</v-btn>
 					</template>
-					<span v-if="!filters.groupByAuthor">Group by author</span>
-					<span v-if="filters.groupByAuthor">Group by favourite</span>
+					<span v-if="filters.groupBy == 'author'">Group by favourite</span>
+					<span v-else>Group by author</span>
 				</v-tooltip>
 			</v-row>
 
@@ -31,74 +31,120 @@
 					</template>
 					<v-list class="py-0">
 						<v-list-item @click.stop="onTitleName">
-							<v-list-item-title>Songs</v-list-item-title>
+							<v-list-item-title>Delete</v-list-item-title>
 							<v-list-item-icon>
-								<v-icon v-show="filters.titleNameOrder" :color="filters.orderOption == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-								<v-icon v-show="!filters.titleNameOrder" :color="filters.orderOption == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+								<v-icon v-show="filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
+								<v-icon v-show="!filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
 							</v-list-item-icon>
 						</v-list-item>
 						<v-list-item @click.stop="onAuthorName">
 							<v-list-item-title>Authors</v-list-item-title>
 							<v-list-item-icon>
-								<v-icon v-show="filters.authorNameOrder" :color="filters.orderOption == 'authorName' || filters.groupByAuthor ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-								<v-icon v-show="!filters.authorNameOrder" :color="filters.orderOption == 'authorName' || filters.groupByAuthor ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+								<v-icon v-show="filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
+								<v-icon v-show="!filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
 							</v-list-item-icon>
 						</v-list-item>
 						<v-list-item @click.stop="onDateModified">
 							<v-list-item-title>Date modified</v-list-item-title>
 							<v-list-item-icon>
-								<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderOption == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-								<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderOption == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+								<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
+								<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
 							</v-list-item-icon>
 						</v-list-item>
 						<v-list-item @click.stop="onDateCreated">
 							<v-list-item-title>Date created</v-list-item-title>
 							<v-list-item-icon>
-								<v-icon v-show="filters.createdDateOrder" :color="filters.orderOption == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-								<v-icon v-show="!filters.createdDateOrder" :color="filters.orderOption == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+								<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
+								<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
 							</v-list-item-icon>
 						</v-list-item>
 					</v-list>
 				</v-menu>
 
 				<v-scroll-x-reverse-transition hide-on-leave>
-					<v-btn v-if="!toggleSelectionTransition" text :icon="selectionEnabled" @click="toggleSelection">
-						<v-icon left v-if="!selectionEnabled">mdi-format-list-bulleted</v-icon>
-						<v-icon v-else>mdi-playlist-remove</v-icon>
-						<span v-if="!selectionEnabled">Select...</span>
-					</v-btn>
+					<div v-if="!toggleSelectionTransition">
+						<v-btn text @click="toggleSelection" key="selectButton">
+							<v-icon left v-if="!selectionEnabled">mdi-format-list-bulleted</v-icon>
+							<v-icon left v-else>mdi-playlist-remove</v-icon>
+							<span v-if="!selectionEnabled">Select...</span>
+							<span v-else>Cancel</span>
+						</v-btn>
+						<v-menu v-if="selectionEnabled" rounded="large" transition="slide-y-transition" bottom>
+							<template v-slot:activator="{ on: onMenu }">
+								<v-btn icon v-on="{ ...onMenu }" class="ml-n2">
+									<!-- <span>Act</span> -->
+									<v-icon>mdi-dots-vertical</v-icon>
+									<!-- <v-icon>mdi-chevron-down</v-icon> -->
+								</v-btn>
+							</template>
+							<v-list class="py-0">
+								<v-list-item @click.stop="askIfDeleteSongs">
+									<v-list-item-title>Delete Selected</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-delete-outline</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+								<v-list-item @click.stop="askToSelectSongbook('add-selected')">
+									<v-list-item-title>Add Selected to Songbook</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-playlist-music-outline</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+								<v-list-item @click.stop="askToSelectSongbook('remove-selected')" v-if="filters.groupBy == 'songbook'">
+									<v-list-item-title>Remove Selected from Songbook</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-playlist-remove</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+								<v-list-item @click.stop="setFavouriteSelected(true)">
+									<v-list-item-title>Add to Favourites</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-star</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+								<v-list-item @click.stop="setFavouriteSelected(false)">
+									<v-list-item-title>Remove from Favourites</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-star-outline</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+							</v-list>
+						</v-menu>
+					</div>
 				</v-scroll-x-reverse-transition>
+			</v-toolbar>
 
-				<v-spacer></v-spacer>
-				<v-fab-transition group hide-on-leave>
-					<v-btn icon v-if="selectionEnabled" :key="'delete'" @click="askIfDeleteSongs">
+			<v-scroll-x-reverse-transition hide-on-leave>
+				<v-toolbar v-if="false" class="elevation-0" height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
+					<v-btn icon :key="'playlist'">
+						<v-icon>mdi-playlist-music-outline</v-icon>
+					</v-btn>
+					<v-btn icon :key="'delete'" @click="askIfDeleteSongs">
 						<v-icon>mdi-delete-outline</v-icon>
 					</v-btn>
-					<v-btn icon v-if="selectionEnabled" :key="'favourite'" @click="onSetFavouriteSelected">
+					<v-btn icon :key="'favourite'" @click="setFavouriteSelected">
 						<v-icon>mdi-star-outline</v-icon>
 					</v-btn>
-					<v-btn icon v-if="selectionEnabled" :key="'unfavourite'" @click="onUnsetFavouriteSelected">
+					<v-btn icon :key="'unfavourite'" @click="setFavouriteSelected">
 						<v-icon>mdi-star</v-icon>
 					</v-btn>
-				</v-fab-transition>
-			</v-toolbar>
-			<delete-dialog v-model="deleteSongsDialogOpened" v-on:accept="onDeleteSelected()" />
+				</v-toolbar>
+			</v-scroll-x-reverse-transition>
 
 			<!-- <v-sheet class="mx-3">
-				<v-switch v-model="filters.groupByAuthor" inset label="Group by author"></v-switch>
+				<v-switch v-model="filters.groupBy == 'author'" inset label="Group by author"></v-switch>
       </v-sheet>-->
 
 			<v-tabs v-model="tab" background-color="transparent" grow>
-				<v-tab @click="filters.groupByPlayBooks = false">
+				<v-tab @click="changeGroup('favourite')">
 					Collection
 				</v-tab>
-				<v-tab @click="filters.groupByPlayBooks = true">
-					Play Books
+				<v-tab @click="changeGroup('songbook')">
+					Song Books
 				</v-tab>
 			</v-tabs>
 
-
-			<v-list>
+			<v-list expand>
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-scroll-y-transition group hide-on-leave>
 					<v-list-group v-for="group in groupedSongs(filters)" :key="group.group">
@@ -106,7 +152,8 @@
 							<v-list-item-title>
 								<v-row>
 									<v-col cols="2" v-if="!selectionEnabled">
-										<v-icon v-if="filters.groupByAuthor" class="mr-3">mdi-account-circle-outline</v-icon>
+										<v-icon v-if="filters.groupBy == 'songbook'" class="mr-3">mdi-playlist-music-outline</v-icon>
+										<v-icon v-else-if="filters.groupBy == 'author'" class="mr-3">mdi-account-circle-outline</v-icon>
 										<v-icon v-else-if="group.group == 'Collection'" class="mr-3">mdi-playlist-music-outline</v-icon>
 										<v-icon v-else class="mr-3">mdi-star-outline</v-icon>
 									</v-col>
@@ -123,7 +170,7 @@
 							</v-list-item-title>
 						</template>
 						<v-scroll-y-transition group hide-on-leave>
-							<v-list-item v-for="song in group.songs" :key="song.id" router :style="filters.groupByAuthor ? 'maxHeight: 40px' : 'maxHeight: 80px'" :to="'/song/' + song.id">
+							<v-list-item v-for="song in group.songs" :key="song.id" router :style="filters.groupBy == 'author' ? 'maxHeight: 40px' : 'maxHeight: 80px'" :to="'/song/' + song.id">
 								<v-fab-transition hide-on-leave>
 									<v-list-item-action class="mr-4" v-if="selectionEnabled">
 										<v-checkbox v-model="selection[song.id]" @click.stop.prevent="onSongSelect(group)"></v-checkbox>
@@ -149,11 +196,11 @@
 										</v-tooltip>
 										{{ song.title }}
 									</v-list-item-title>
-									<v-list-item-subtitle v-if="!filters.groupByAuthor">{{ song.author }}</v-list-item-subtitle>
+									<v-list-item-subtitle v-if="!(filters.groupBy == 'author')">{{ song.author }}</v-list-item-subtitle>
 								</v-list-item-content>
 
 								<v-list-item-action class="mr-n6">
-									<v-btn icon @click.prevent.stop="onFavouriteChange(song.id, song.favourite)">
+									<v-btn icon @click.prevent.stop="toggleFavourite(song.id, song.favourite)">
 										<v-icon v-if="!song.favourite" color="grey lighten-1">mdi-star-outline</v-icon>
 
 										<v-icon v-else color="yellow">mdi-star</v-icon>
@@ -169,7 +216,6 @@
 										</template>
 										<v-list class="py-0">
 											<v-list-item @click.stop="askIfEditSong(song)">
-												<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 												<v-list-item-title>Edit</v-list-item-title>
 												<v-list-item-icon>
 													<v-icon>mdi-pencil-outline</v-icon>
@@ -181,6 +227,18 @@
 													<v-icon>mdi-delete-outline</v-icon>
 												</v-list-item-icon>
 											</v-list-item>
+											<v-list-item @click.stop="askToSelectSongbook('add', song)">
+												<v-list-item-title>Add To Songbook</v-list-item-title>
+												<v-list-item-icon>
+													<v-icon>mdi-playlist-music-outline</v-icon>
+												</v-list-item-icon>
+											</v-list-item>
+											<v-list-item @click.stop="removeFromSongbook(song, group.group)" v-if="filters.groupBy == 'songbook'">
+												<v-list-item-title>Remove from Songbook</v-list-item-title>
+												<v-list-item-icon>
+													<v-icon>mdi-playlist-remove</v-icon>
+												</v-list-item-icon>
+											</v-list-item>
 										</v-list>
 									</v-menu>
 								</v-list-item-action>
@@ -189,9 +247,34 @@
 						<v-divider class="mx-4"></v-divider>
 					</v-list-group>
 				</v-scroll-y-transition>
+				<div class="d-flex justify-space-around mt-2">
+					<v-fab-transition hide-on-leave>
+						<v-btn fab small class="primary" v-if="filters.groupBy == 'songbook' && !changingGroupsTransition">
+							<v-icon>mdi-plus</v-icon>
+						</v-btn>
+					</v-fab-transition>
+
+					<v-fab-transition hide-on-leave>
+						<v-btn fab small class="primary" v-if="!changingGroupsTransition">
+							<v-icon>mdi-plus</v-icon>
+						</v-btn>
+					</v-fab-transition>
+				</div>
 			</v-list>
 		</v-navigation-drawer>
+
+		<!----------------------------------- Dialogs ----------------------------------->
+		<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 		<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
+		<delete-dialog v-model="deleteSongsDialogOpened" v-on:accept="deleteSelected()" />
+		<select-songbook-dialog
+			v-model="selecSongbookDialogOpened"
+			@onSelected="
+				(songbook) => {
+					runSongbookAction(songbook, songbookAction);
+				}
+			"
+		/>
 	</div>
 </template>
 
@@ -204,13 +287,16 @@ export default {
 		return {
 			selectionEnabled: false,
 			currentSong: undefined,
+			songbookAction: undefined,
 			tab: null,
 			selection: {},
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
 			deleteSongsDialogOpened: false,
+			selecSongbookDialogOpened: false,
 			groupSelection: {},
 			toggleSelectionTransition: false,
+			changingGroupsTransition: false,
 		};
 	},
 	methods: {
@@ -225,6 +311,16 @@ export default {
 				this.toggleSelectionTransition = false;
 			}, 80);
 		},
+
+		changeGroup(group) {
+			this.filters.groupBy = group;
+
+			this.changingGroupsTransition = true;
+			setTimeout(() => {
+				this.changingGroupsTransition = false;
+			}, 80);
+		},
+
 		onGroupSelect(groupName) {
 			this.groupedSongs(this.filters).forEach((group) => {
 				if (group.group === groupName) {
@@ -295,8 +391,37 @@ export default {
 			}
 		},
 
+		askToSelectSongbook(action, song = undefined) {
+			this.selecSongbookDialogOpened = true;
+			this.songbookAction = action;
+			this.currentSong = song;
+		},
+
 		deleteSong(songId) {
 			this.$store.dispatch("deleteSong", songId);
+		},
+
+		runSongbookAction(songbook, action) {
+			console.log(this.currentSong, songbook, action);
+			if (action === "add") {
+				this.$store.dispatch("addSongToSongbook", { id: this.currentSong.id, songbook: songbook });
+			} else if (action === "add-selected") {
+				for (let key in this.selection) {
+					if (this.selection[key] === true) {
+						this.$store.dispatch("addSongToSongbook", { id: key, songbook: songbook });
+					}
+				}
+			} else if (action === "remove-selected") {
+				for (let key in this.selection) {
+					if (this.selection[key] === true) {
+						this.$store.dispatch("removeSongFromSongbook", { id: key, songbook: songbook });
+					}
+				}
+			}
+		},
+
+		removeFromSongbook(song, songbook) {
+			this.$store.dispatch("removeSongFromSongbook", { id: song.id, songbook: songbook });
 		},
 
 		askIfDeleteSongs() {
@@ -305,7 +430,7 @@ export default {
 			}
 		},
 
-		onDeleteSelected() {
+		deleteSelected() {
 			for (let key in this.selection) {
 				if (this.selection[key] === true) {
 					this.deleteSong(key);
@@ -313,23 +438,15 @@ export default {
 			}
 		},
 
-		onUnsetFavouriteSelected() {
+		setFavouriteSelected(flag) {
 			for (let key in this.selection) {
 				if (this.selection[key] === true) {
-					this.onFavouriteChange(key, false);
+					this.toggleFavourite(key, !flag);
 				}
 			}
 		},
 
-		onSetFavouriteSelected() {
-			for (let key in this.selection) {
-				if (this.selection[key] === true) {
-					this.onFavouriteChange(key, true);
-				}
-			}
-		},
-
-		onFavouriteChange(songId, currentFavourite) {
+		toggleFavourite(songId, currentFavourite) {
 			this.$store.dispatch("setFavourite", {
 				id: songId,
 				value: !currentFavourite,
