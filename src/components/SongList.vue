@@ -3,7 +3,7 @@
 		<v-navigation-drawer v-if="userLogged" v-model="opened" :permanent="drawerPermanent" :temporary="viewportSize.xs" app overflow clipped width="350">
 			<!-- <div v-for="song in songs" :key="song.id" class="ma-3">
 				<span>{{ song.title }}</span> <v-btn :to="'/song/' + song.id">Go to song</v-btn>
-
+        
 
       </div>-->
 			<v-row class="ma-3 mt-3">
@@ -248,11 +248,13 @@
 					</v-list-group>
 				</v-scroll-y-transition>
 				<div class="d-flex justify-space-around mt-2">
-					<v-fab-transition hide-on-leave>
-						<v-btn fab small class="primary" v-if="filters.groupBy == 'songbook' && !changingGroupsTransition">
-							<v-icon>mdi-plus</v-icon>
-						</v-btn>
-					</v-fab-transition>
+					<v-card>
+						<v-fab-transition hide-on-leave>
+							<v-btn fab small class="primary" v-if="filters.groupBy == 'songbook' && !changingGroupsTransition">
+								<v-icon>mdi-plus</v-icon>
+							</v-btn>
+						</v-fab-transition>
+					</v-card>
 
 					<v-fab-transition hide-on-leave>
 						<v-btn fab small class="primary" v-if="!changingGroupsTransition">
