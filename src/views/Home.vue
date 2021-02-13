@@ -75,11 +75,11 @@
 					<v-sheet class="elevation-1">
 						<v-skeleton-loader v-show="publicSongListLoading" v-for="n in 5" :key="n" type="list-item-two-line"></v-skeleton-loader>
 
-						<v-list v-if="!publicSongListLoading">
+						<v-list v-if="!publicSongListLoading" expand>
 							<v-scroll-x-transition group hide-on-leave>
 								<v-list-group class="d-none" key="group"></v-list-group>
 								<v-list-item-group class="d-none" key="item-group"></v-list-item-group>
-								<component :is="filters.groupBy == 'author' ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
+								<component :is="filters.groupBy == 'author' ? 'v-list-group' : 'v-template'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
 									<template v-slot:activator v-if="filters.groupBy == 'author'">
 										<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
 									</template>
@@ -88,10 +88,13 @@
 										<!-- <template > -->
 										<!-- <v-divider class="mx-3" :key="n" v-if="n !== 0"></v-divider> -->
 
-										<v-list-item v-for="song in group.songs" :two-line="!filters.groupBy == 'author'" @click.stop="openSongDialog(song)" :key="song.id">
+										<v-list-item v-for="song in group.songs" :two-line="!filters.groupBy == 'author'" @click.stop="openSongDialog(song)" :key="song.id" prepend-icon="mdi-account-circle-outline">
 											<v-list-item-content>
-												<v-list-item-title>{{ song.title }}</v-list-item-title>
-												<v-list-item-subtitle v-if="!filters.groupBy == 'author'">{{ song.author }}</v-list-item-subtitle>
+												<v-list-item-title>
+													<v-icon v-if="filters.groupBy == 'author'" color="grey" class="mr-2">mdi-music-note-outline</v-icon>
+													{{ song.title }}
+												</v-list-item-title>
+												<v-list-item-subtitle v-if="filters.groupBy != 'author'">{{ song.author }}</v-list-item-subtitle>
 											</v-list-item-content>
 
 											<v-tooltip top>
@@ -118,7 +121,7 @@
 												<v-tooltip top>
 													<template v-slot:activator="{ on, attrs }">
 														<v-fab-transition hide-on-leave>
-															<v-btn v-if="!alreadyInCollection(song.id)" :disabled="!userLogged || alreadyInCollection(song.id)" fab x-small class="elevation-0 primary mt-1" v-bind="attrs" v-on="on" @click.stop.prevent="addToCollection(song)">
+															<v-btn v-if="!alreadyInCollection(song.id)" :disabled="!userLogged || alreadyInCollection(song.id)" fab x-small class="elevation-0 primary" v-bind="attrs" v-on="on" @click.stop.prevent="addToCollection(song)">
 																<v-icon>mdi-plus</v-icon>
 															</v-btn>
 														</v-fab-transition>
