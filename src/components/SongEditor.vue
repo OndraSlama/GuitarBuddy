@@ -28,7 +28,33 @@
 			<v-textarea outlined rows="15" :class="['text-area', 'pt-3', 'mt-n3', viewportSize.smAndDown ? '' : 'limit-height']" v-model="tempSource.text" label="Song text with chords" :rules="rules" auto-grow></v-textarea>
 
 			<v-toolbar class="elevation-0" :color="$vuetify.theme.dark ? '#121212' : ''">
-				<v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
+				<v-tooltip top>
+					<template v-slot:activator="{ on: onTooltip }">
+						<v-menu rounded="large" transition="slide-y-transition" bottom>
+							<template v-slot:activator="{ on: onMenu }">
+								<v-btn icon @click.stop.prevent class="" v-on="{ ...onMenu, ...onTooltip }">
+									<v-icon>{{ tempSource.chordsAboveText ? "mdi-format-text-variant" : "mdi-code-brackets" }}</v-icon>
+								</v-btn>
+							</template>
+							<v-list class="py-0">
+								<v-list-item @click="tempSource.chordsAboveText = true">
+									<v-list-item-title>Chords above text</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-format-text-variant</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+								<v-list-item @click="tempSource.chordsAboveText = false">
+									<v-list-item-title>Chords in text surrounded by []</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-code-brackets</v-icon>
+									</v-list-item-icon>
+								</v-list-item>
+							</v-list>
+						</v-menu>
+					</template>
+					<span>Chords position</span>
+				</v-tooltip>
+				<!-- <v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
 					<v-tooltip top>
 						<template v-slot:activator="{ on, attrs }">
 							<v-btn icon v-bind="attrs" v-on="on">
@@ -41,12 +67,11 @@
 						<template v-slot:activator="{ on, attrs }">
 							<v-btn icon v-bind="attrs" v-on="on">
 								<v-icon>mdi-format-text-variant</v-icon>
-								<!-- <span>Chords Above Text</span> -->
 							</v-btn>
 						</template>
 						<span>Chords above text aligned with spaces</span>
 					</v-tooltip>
-				</v-btn-toggle>
+				</v-btn-toggle> -->
 				<v-tooltip top>
 					<template v-slot:activator="{ on: onMenu }">
 						<v-menu rounded="large" transition="slide-y-transition" bottom>
@@ -59,9 +84,15 @@
 								<v-list-item @click.stop.prevent="tempSource.trimLines = !tempSource.trimLines">
 									<v-checkbox v-model="tempSource.trimLines" @click.stop.prevent></v-checkbox>
 									<v-list-item-title>Trim lines</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-format-horizontal-align-left</v-icon>
+									</v-list-item-icon>
 								</v-list-item>
 								<v-list-item @click.stop.prevent="variableToFixed" :disabled="!tempSource.chordsAboveText">
 									<v-list-item-title>Fix Chord Alignment (experimental)</v-list-item-title>
+									<v-list-item-icon>
+										<v-icon>mdi-format-align-bottom</v-icon>
+									</v-list-item-icon>
 								</v-list-item>
 								<!-- <v-list-item @click.stop.prevent="fixedToVariable">
 									<v-list-item-title>Fixed width -> Variable width spaces</v-list-item-title>
@@ -80,7 +111,7 @@
 				<v-btn @click="reset" icon>
 					<v-icon>mdi-cancel</v-icon>
 				</v-btn>
-				<v-btn fab large type="submit" class="ml-2 mr-n4" color="primary" :disabled="!validInput || !userLogged">
+				<v-btn fab type="submit" class="ml-2 mr-n4" color="primary" :disabled="!validInput || !userLogged">
 					<v-icon v-if="type === 'add'">mdi-upload-outline</v-icon>
 					<v-icon v-if="type === 'edit'">mdi-content-save-outline</v-icon>
 				</v-btn>
@@ -96,6 +127,7 @@ import { Chord } from "@tonaljs/tonal";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
 import ImageDialog from "../components/Dialogs/ImageDialog";
+// import TooltipWraper from "../components/Others/TooltipWraper";
 export default {
 	data() {
 		return {
@@ -114,7 +146,7 @@ export default {
 					author: "",
 					text: "",
 					chordsAboveText: true,
-					trimLines: false,
+					trimLines: true,
 					public: true,
 				};
 			},
@@ -437,6 +469,7 @@ export default {
 
 	components: {
 		"image-dialog": ImageDialog,
+		// "tooltip-wraper": TooltipWraper,
 	},
 };
 </script>

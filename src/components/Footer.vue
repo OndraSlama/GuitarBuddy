@@ -3,7 +3,7 @@
     <v-footer class="font-weight-medium" inset padless>
       <v-col class="text-right" padless cols="12">
         {{ new Date().getFullYear() }} —
-        <strong>achordeon</strong>
+        <strong>guitarrbuddy</strong>
       </v-col>
     </v-footer>
   </div>

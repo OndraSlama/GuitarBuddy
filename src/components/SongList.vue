@@ -143,7 +143,6 @@
 					Song Books
 				</v-tab>
 			</v-tabs>
-
 			<v-list expand>
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-scroll-y-transition group hide-on-leave>
@@ -247,28 +246,21 @@
 						<v-divider class="mx-4"></v-divider>
 					</v-list-group>
 				</v-scroll-y-transition>
-				<div class="d-flex justify-space-around mt-2">
-					<v-card>
-						<v-fab-transition hide-on-leave>
-							<v-btn fab small class="primary" v-if="filters.groupBy == 'songbook' && !changingGroupsTransition">
-								<v-icon>mdi-plus</v-icon>
-							</v-btn>
-						</v-fab-transition>
-					</v-card>
-
-					<v-fab-transition hide-on-leave>
-						<v-btn fab small class="primary" v-if="!changingGroupsTransition">
-							<v-icon>mdi-plus</v-icon>
-						</v-btn>
-					</v-fab-transition>
-				</div>
+				<!-- <div class="d-flex justify-space-around mt-3 thin-border"> -->
 			</v-list>
+			<v-fab-transition>
+				<v-btn fab class="primary elevation-3" @click="floatButtonAction" absolute :style="{ bottom: '20px', right: '20px' }" :key="filters.groupBy">
+					<v-icon>{{ filters.groupBy == "songbook" ? "mdi-folder-plus-outline" : "mdi-music-note-plus" }}</v-icon>
+				</v-btn>
+			</v-fab-transition>
+			<!-- </div> -->
 		</v-navigation-drawer>
 
 		<!----------------------------------- Dialogs ----------------------------------->
 		<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 		<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
 		<delete-dialog v-model="deleteSongsDialogOpened" v-on:accept="deleteSelected()" />
+		<add-songbook-dialog v-model="addSongbookDialogOpened" v-on:accept="addSongBook" />
 		<select-songbook-dialog
 			v-model="selecSongbookDialogOpened"
 			@onSelected="
@@ -283,6 +275,7 @@
 <script>
 import { mapGetters } from "vuex";
 import filtersBase from "../mixins/songFiltersBase";
+import SongbookNameDialog from "../components/Dialogs/SongbookNameDialog";
 export default {
 	mixins: [filtersBase],
 	data() {
@@ -292,16 +285,24 @@ export default {
 			songbookAction: undefined,
 			tab: null,
 			selection: {},
+			groupSelection: {},
+			toggleSelectionTransition: false,
+			changingGroupsTransition: false,
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
 			deleteSongsDialogOpened: false,
 			selecSongbookDialogOpened: false,
-			groupSelection: {},
-			toggleSelectionTransition: false,
-			changingGroupsTransition: false,
+			addSongbookDialogOpened: false,
 		};
 	},
 	methods: {
+		floatButtonAction() {
+			if (this.filters.groupBy == "songbook") {
+				this.addSongbookDialogOpened = true;
+			} else {
+				this.$router.push("/add-song/");
+			}
+		},
 		toggleSelection() {
 			this.selectionEnabled = !this.selectionEnabled;
 			if (!this.selectionEnabled) {
@@ -322,7 +323,9 @@ export default {
 				this.changingGroupsTransition = false;
 			}, 80);
 		},
-
+		addSongBook(name) {
+			this.$store.dispatch("addSongBook", name);
+		},
 		onGroupSelect(groupName) {
 			this.groupedSongs(this.filters).forEach((group) => {
 				if (group.group === groupName) {
@@ -479,6 +482,10 @@ export default {
 			groupedSongs: "getFilteredUserSongs",
 			songListLoading: "getSongListLoading",
 		}),
+	},
+
+	components: {
+		"add-songbook-dialog": SongbookNameDialog,
 	},
 };
 </script>

@@ -29,8 +29,8 @@ export default new Vuex.Store({
 		getCurrentSong: (state) => (id) => state.userSongs.find((el) => el.id === id),
 
 		getFilteredUserSongs: (state, getters) => (filters) => {
-			if (!getters.getUserLogged || state.userSongs === undefined) return [];
-			return getters.getFilteredSongs(state.userSongs, filters);
+            if (!getters.getUserLogged || state.userSongs === undefined) return [];
+            return getters.getFilteredSongs(state.userSongs, filters);
 		},
 
 		getFilteredPublicSongs: (state, getters) => (filters) => {
@@ -58,12 +58,22 @@ export default new Vuex.Store({
 				return titleMatch || authorMatch;
 			});
 
-			let groupsObject = {};
+            let groupsObject = {};
+
+            // Prepare groups if group by "songbooks" - because there can be empty songbooks
+            let playbooks = getters.getUserSongBooks;
+            if (filters.groupBy == 'songbook'){
+                for (const key in playbooks) {
+                    groupsObject[key] = []
+                }
+            }
+            
+
+
 			filteredSongs.forEach((song) => {
 				let groups = [];
 				// Determine groups for every song
 				if (filters.groupBy == 'songbook'){
-					let playbooks = getters.getUserSongBooks;
 					for (const key in playbooks) {
 						if (Object.prototype.hasOwnProperty.call(playbooks[key], song["id"])) {
 							if (!groups.includes(key)){
@@ -479,6 +489,19 @@ export default new Vuex.Store({
                     .database()
                     .ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
                     .update({ favourite: payload.value });
+            }
+        },
+
+        addSongBook( {getters }, payload){
+            console.log(getters.getUserSongs);
+            if (getters.getUserLogged && getters.getUserSongs.length > 0) {                     
+                firebase
+                    .database()
+                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
+                    .update({ [getters.getUserSongs[0].id]: false })
+                    .catch((e) => {
+                        console.log(e);
+                    });		                
             }
         },
         
