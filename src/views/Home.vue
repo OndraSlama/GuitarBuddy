@@ -79,7 +79,7 @@
 							<v-scroll-x-transition group hide-on-leave>
 								<v-list-group class="d-none" key="group"></v-list-group>
 								<v-list-item-group class="d-none" key="item-group"></v-list-item-group>
-								<component :is="filters.groupBy == 'author' ? 'v-list-group' : 'v-template'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
+								<component :is="filters.groupBy == 'author' ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
 									<template v-slot:activator v-if="filters.groupBy == 'author'">
 										<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
 									</template>

@@ -67,8 +67,6 @@ export default new Vuex.Store({
                     groupsObject[key] = []
                 }
             }
-            
-
 
 			filteredSongs.forEach((song) => {
 				let groups = [];
@@ -261,8 +259,8 @@ export default new Vuex.Store({
 							...obj[key],
 						});
                     }
-                    console.log("downloading data from firebase:");
-                    console.log(obj);
+                    // console.log("downloading data from firebase:");
+                    // console.log(obj);
 					commit("setPublicSongs", publicSongs);
 					commit("setPublicSongListLoading", false);
 				});
@@ -299,8 +297,8 @@ export default new Vuex.Store({
 								});
                             }
 
-                            console.log("downloading data from firebase:");
-                            console.log(obj);
+                            // console.log("downloading data from firebase:");
+                            // console.log(obj);
                             
                             commit("setUserSongs", userSongs);
 
@@ -493,12 +491,42 @@ export default new Vuex.Store({
         },
 
         addSongBook( {getters }, payload){
-            console.log(getters.getUserSongs);
+            // console.log(getters.getUserSongs);
             if (getters.getUserLogged && getters.getUserSongs.length > 0) {                     
                 firebase
                     .database()
                     .ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
                     .update({ [getters.getUserSongs[0].id]: false })
+                    .catch((e) => {
+                        console.log(e);
+                    });		                
+            }
+		},
+
+		changeSongBookName( {getters }, payload){
+            // console.log(getters.getUserSongs);
+            if (getters.getUserLogged) {
+				let songBooks = firebase.database().ref("users/" + getters.getUser.uid + "/playBooks/");
+
+				songBooks.child(payload.old).once('value').then((snap) => {
+				var data = snap.val();
+				var update = {};
+				update[payload.old] = null;
+				update[payload.new] = data;
+				return songBooks.update(update);
+				}).catch((e) => {
+					console.log(e);
+				}); 
+            }
+		},
+		
+		deleteSongBook( {getters }, payload){
+            // console.log(getters.getUserSongs);
+            if (getters.getUserLogged) {                     
+                firebase
+                    .database()
+                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
+                    .remove()
                     .catch((e) => {
                         console.log(e);
                     });		                

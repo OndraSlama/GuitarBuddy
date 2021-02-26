@@ -3,7 +3,7 @@
 		<!-- <template v-slot:extension> -->
 		<!-- </template> -->
 		<v-sheet style="position: relative" :class="type === 'modal' ? 'elevation-0' : 'elevation-2'">
-			<v-toolbar height="50px" class="elevation-0" >
+			<v-toolbar height="50px" class="elevation-0">
 				<v-toolbar-items>
 					<v-btn v-show="type === 'modal'" icon @click.stop="$emit('cancel')" class="ml-n3">
 						<v-icon>mdi-window-close</v-icon>
@@ -101,14 +101,14 @@
 									<v-icon>mdi-help-circle-outline</v-icon>
 								</v-list-item-icon>
 								<!-- <v-list-item-content> -->
-									<v-row style="height: 50px ">
-										<v-col style="height: 50px; min-width: 150px; flex-grow: 5">
-											Show chord tabs
-										</v-col>
-										<v-col>
-											<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="showTabs" inset></v-switch>
-										</v-col>
-									</v-row>
+								<v-row style="height: 50px ">
+									<v-col style="height: 50px; min-width: 150px; flex-grow: 5">
+										Show chord tabs
+									</v-col>
+									<v-col>
+										<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="showTabs" inset></v-switch>
+									</v-col>
+								</v-row>
 								<!-- </v-list-item-content> -->
 							</v-list-item>
 						</v-list>
@@ -124,7 +124,6 @@
 						</div>
 						<div class="text-h5 text--secondary">{{ song.author }}</div>
 					</v-col>
-					<!-- <v-spacer v-for="n in 10" :key="n"></v-spacer> -->
 
 					<v-col class="text-start ml-n5" style="max-width: 290px; min-width: 290px" align-self="start">
 						<v-tooltip top>
@@ -150,6 +149,7 @@
 						</v-tooltip>
 					</v-col>
 				</v-row>
+				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
 					<v-row v-if="showTabs">
 						<v-col v-for="chord in distinctChords" :key="chord" style="max-width: 100px">
@@ -157,12 +157,12 @@
 						</v-col>
 					</v-row>
 				</v-scroll-y-transition>
-
+				<!----------------------------------- Song text ----------------------------------->
 				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
-					<v-sheet :class="['mb-3 ', 'section', multipleColumns ? 'multiple-columns mt-3 mr-6' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
+					<v-card :class="['mb-3 ', 'section', 'elevation-0', multipleColumns ? 'multiple-columns mt-3 mr-6' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
 						<v-divider v-if="!multipleColumns && i > 0" class="mb-3"></v-divider>
 						<div v-html="formatSection(section)"></div>
-					</v-sheet>
+					</v-card>
 				</div>
 			</div>
 		</v-sheet>
@@ -389,7 +389,7 @@ export default {
 
 		sectionFontSize() {
 			if (!this.multipleColumns) {
-				return Math.min(Math.max(this.minFontSize, 16), this.dynamicSectionFontSize);
+				return this.minFontSize; //Math.min(Math.max(this.minFontSize, 16), this.dynamicSectionFontSize);
 			} else {
 				return this.dynamicSectionFontSize;
 			}

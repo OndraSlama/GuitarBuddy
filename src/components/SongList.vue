@@ -20,7 +20,7 @@
 					<span v-else>Group by author</span>
 				</v-tooltip>
 			</v-row>
-
+			<!----------------------------------- Order by menu ----------------------------------->
 			<v-toolbar class="elevation-0 mt-n3" height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
 				<v-menu rounded="large" transition="slide-y-transition" bottom>
 					<template v-slot:activator="{ on: onMenu }">
@@ -61,6 +61,7 @@
 					</v-list>
 				</v-menu>
 
+				<!----------------------------------- Select toolbar ----------------------------------->
 				<v-scroll-x-reverse-transition hide-on-leave>
 					<div v-if="!toggleSelectionTransition">
 						<v-btn text @click="toggleSelection" key="selectButton">
@@ -114,7 +115,7 @@
 				</v-scroll-x-reverse-transition>
 			</v-toolbar>
 
-			<v-scroll-x-reverse-transition hide-on-leave>
+			<!-- <v-scroll-x-reverse-transition hide-on-leave>
 				<v-toolbar v-if="false" class="elevation-0" height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
 					<v-btn icon :key="'playlist'">
 						<v-icon>mdi-playlist-music-outline</v-icon>
@@ -129,7 +130,7 @@
 						<v-icon>mdi-star</v-icon>
 					</v-btn>
 				</v-toolbar>
-			</v-scroll-x-reverse-transition>
+			</v-scroll-x-reverse-transition> -->
 
 			<!-- <v-sheet class="mx-3">
 				<v-switch v-model="filters.groupBy == 'author'" inset label="Group by author"></v-switch>
@@ -149,23 +150,49 @@
 					<v-list-group v-for="group in groupedSongs(filters)" :key="group.group">
 						<template v-slot:activator>
 							<v-list-item-title>
-								<v-row>
-									<v-col cols="2" v-if="!selectionEnabled">
+								<div class="d-flex" :style="{ 'min-width': '200px' }">
+									<div v-if="!selectionEnabled" class="align-self-center">
 										<v-icon v-if="filters.groupBy == 'songbook'" class="mr-3">mdi-playlist-music-outline</v-icon>
 										<v-icon v-else-if="filters.groupBy == 'author'" class="mr-3">mdi-account-circle-outline</v-icon>
 										<v-icon v-else-if="group.group == 'Collection'" class="mr-3">mdi-playlist-music-outline</v-icon>
 										<v-icon v-else class="mr-3">mdi-star-outline</v-icon>
-									</v-col>
-									<v-col cols="2" v-if="selectionEnabled">
+									</div>
+									<div v-if="selectionEnabled" class="align-self-center">
 										<v-fab-transition hide-on-leave>
 											<v-checkbox class="mt-n1 mb-n5 mr-2" v-model="groupSelection[group.group]" @click.stop.prevent="onGroupSelect(group.group)" v-if="selectionEnabled"></v-checkbox>
 										</v-fab-transition>
-									</v-col>
+									</div>
 
-									<v-col cols="8" align-self="center">
+									<div class="align-self-center text-truncate">
 										{{ group.group ? group.group : "Unknown" }}
-									</v-col>
-								</v-row>
+									</div>
+
+									<div class="ml-auto" v-if="filters.groupBy == 'songbook'">
+										<v-btn icon @click.stop="askForSongBookName(group.group)">
+											<v-icon>mdi-pencil-outline</v-icon>
+										</v-btn>
+										<v-btn icon @click.stop="askIfDeleteSongBook(group.group)" class="ml-2">
+											<v-icon>mdi-delete-outline</v-icon>
+										</v-btn>
+										<!-- 
+											<v-menu rounded="large" transition="slide-y-transition" bottom>
+												<template v-slot:activator="{ on: onMenu }">
+													<v-btn icon v-on="{ ...onMenu }" class="ml-n2">
+														<v-icon>mdi-dots-vertical</v-icon>
+													</v-btn>
+												</template>
+												<v-list class="py-0">
+													<v-list-item @click.stop="">
+														<v-list-item-title>Delete Selected</v-list-item-title>
+														<v-list-item-icon>
+															<v-icon>mdi-delete-outline</v-icon>
+														</v-list-item-icon>
+													</v-list-item>
+												</v-list>
+											</v-menu>
+										-->
+									</div>
+								</div>
 							</v-list-item-title>
 						</template>
 						<v-scroll-y-transition group hide-on-leave>
@@ -260,9 +287,19 @@
 		<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 		<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
 		<delete-dialog v-model="deleteSongsDialogOpened" v-on:accept="deleteSelected()" />
-		<add-songbook-dialog v-model="addSongbookDialogOpened" v-on:accept="addSongBook" />
+		<general-dialog v-model="deleteSongBookDialogOpened" v-on:accept="deleteSongBook(currentSongbook)" title="Deleting a song book" :text="'Are you sure you want to delete \'' + currentSongbook + '\'? Songs inside this song book will not be deleted.'" acceptButton="Yes, delete" />
+		<add-songbook-dialog v-model="addSongBookDialogOpened" v-on:accept="addSongBook" />
+		<add-songbook-dialog
+			v-model="changeSongBookNameDialogOpened"
+			:defaultSongBookName="currentSongbook"
+			v-on:accept="
+				(newName) => {
+					changeSongBookName(currentSongbook, newName);
+				}
+			"
+		/>
 		<select-songbook-dialog
-			v-model="selecSongbookDialogOpened"
+			v-model="selectSongbookDialogOpened"
 			@onSelected="
 				(songbook) => {
 					runSongbookAction(songbook, songbookAction);
@@ -282,6 +319,7 @@ export default {
 		return {
 			selectionEnabled: false,
 			currentSong: undefined,
+			currentSongbook: undefined,
 			songbookAction: undefined,
 			tab: null,
 			selection: {},
@@ -289,16 +327,18 @@ export default {
 			toggleSelectionTransition: false,
 			changingGroupsTransition: false,
 			editPublicSongDialogOpened: false,
+			deleteSongBookDialogOpened: false,
 			deleteSongDialogOpened: false,
 			deleteSongsDialogOpened: false,
-			selecSongbookDialogOpened: false,
-			addSongbookDialogOpened: false,
+			selectSongbookDialogOpened: false,
+			changeSongBookNameDialogOpened: false,
+			addSongBookDialogOpened: false,
 		};
 	},
 	methods: {
 		floatButtonAction() {
 			if (this.filters.groupBy == "songbook") {
-				this.addSongbookDialogOpened = true;
+				this.addSongBookDialogOpened = true;
 			} else {
 				this.$router.push("/add-song/");
 			}
@@ -325,6 +365,24 @@ export default {
 		},
 		addSongBook(name) {
 			this.$store.dispatch("addSongBook", name);
+		},
+		askForSongBookName(songbook) {
+			if (this.userLogged) {
+				this.changeSongBookNameDialogOpened = true;
+				this.currentSongbook = songbook;
+			}
+		},
+		changeSongBookName(currentSongbook, newName) {
+			this.$store.dispatch("changeSongBookName", { old: currentSongbook, new: newName });
+		},
+		askIfDeleteSongBook(songbook) {
+			if (this.userLogged) {
+				this.deleteSongBookDialogOpened = true;
+				this.currentSongbook = songbook;
+			}
+		},
+		deleteSongBook(name) {
+			this.$store.dispatch("deleteSongBook", name);
 		},
 		onGroupSelect(groupName) {
 			this.groupedSongs(this.filters).forEach((group) => {
@@ -397,7 +455,7 @@ export default {
 		},
 
 		askToSelectSongbook(action, song = undefined) {
-			this.selecSongbookDialogOpened = true;
+			this.selectSongbookDialogOpened = true;
 			this.songbookAction = action;
 			this.currentSong = song;
 		},
@@ -408,20 +466,29 @@ export default {
 
 		runSongbookAction(songbook, action) {
 			console.log(this.currentSong, songbook, action);
-			if (action === "add") {
-				this.$store.dispatch("addSongToSongbook", { id: this.currentSong.id, songbook: songbook });
-			} else if (action === "add-selected") {
-				for (let key in this.selection) {
-					if (this.selection[key] === true) {
-						this.$store.dispatch("addSongToSongbook", { id: key, songbook: songbook });
+			switch (action) {
+				case "add":
+					this.$store.dispatch("addSongToSongbook", { id: this.currentSong.id, songbook: songbook });
+					break;
+
+				case "add-selected":
+					for (let key in this.selection) {
+						if (this.selection[key] === true) {
+							this.$store.dispatch("addSongToSongbook", { id: key, songbook: songbook });
+						}
 					}
-				}
-			} else if (action === "remove-selected") {
-				for (let key in this.selection) {
-					if (this.selection[key] === true) {
-						this.$store.dispatch("removeSongFromSongbook", { id: key, songbook: songbook });
+					break;
+
+				case "remove-selected":
+					for (let key in this.selection) {
+						if (this.selection[key] === true) {
+							this.$store.dispatch("removeSongFromSongbook", { id: key, songbook: songbook });
+						}
 					}
-				}
+					break;
+
+				default:
+					break;
 			}
 		},
 

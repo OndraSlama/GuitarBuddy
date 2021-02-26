@@ -4,7 +4,7 @@
 			<v-card-title class="headline">Define song book name</v-card-title>
 
 			<v-card-text>
-				<v-text-field class="" v-model="songbookName" label="Song book name" hide-details="auto"></v-text-field>
+				<v-text-field class="" v-model="songBookName" label="Song book name" hide-details="auto"></v-text-field>
 			</v-card-text>
 
 			<v-card-actions>
@@ -26,16 +26,27 @@ export default {
 
 	data() {
 		return {
-			songbookName: "",
+			songBookName: "",
 		};
+	},
+	props: {
+		defaultSongBookName: {
+			type: String,
+			default: "",
+		},
 	},
 
 	methods: {
 		onAgree() {
 			this.dialogOpened = false;
-			let temp = this.songbookName;
-			this.songbookName = "";
+			let temp = this.songBookName;
+			this.songBookName = "";
 			this.$emit("accept", temp);
+		},
+	},
+	watch: {
+		defaultSongBookName: function() {
+			this.songBookName = this.defaultSongBookName;
 		},
 	},
 

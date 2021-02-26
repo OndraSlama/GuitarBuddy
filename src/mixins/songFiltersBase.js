@@ -10,7 +10,7 @@ export default {
 				createdDateOrder: false,
 				forksOrder: false,
 				orderBy: "titleName",
-				lastRow: 5,
+				lastRow: 15,
 			},
 
 		};
