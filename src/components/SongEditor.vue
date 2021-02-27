@@ -33,26 +33,30 @@
 						<v-menu rounded="large" transition="slide-y-transition" bottom>
 							<template v-slot:activator="{ on: onMenu }">
 								<v-btn icon @click.stop.prevent class="" v-on="{ ...onMenu, ...onTooltip }">
-									<v-icon>{{ tempSource.chordsAboveText ? "mdi-format-text-variant" : "mdi-code-brackets" }}</v-icon>
+									<v-icon>mdi-cog-outline</v-icon>
 								</v-btn>
 							</template>
 							<v-list class="py-0">
-								<v-list-item @click="tempSource.chordsAboveText = true">
-									<v-list-item-title>Chords above text</v-list-item-title>
+								<v-list-item @click.stop="tempSource.chordsAboveText = !tempSource.chordsAboveText">
+									<v-list-item-title class="mr-3">{{ tempSource.chordsAboveText ? "Chords above text" : "Chords in brackets" }}</v-list-item-title>
+									<v-icon class="mr-3" :color="!tempSource.chordsAboveText ? 'primary' : ''">mdi-code-brackets</v-icon>
+									<v-switch @click.stop v-model="tempSource.chordsAboveText" inset color="gray"> </v-switch>
+									<v-icon :color="tempSource.chordsAboveText ? 'primary' : ''">mdi-arrow-up</v-icon>
+									<!-- 
 									<v-list-item-icon>
 										<v-icon>mdi-format-text-variant</v-icon>
-									</v-list-item-icon>
+									</v-list-item-icon> -->
 								</v-list-item>
-								<v-list-item @click="tempSource.chordsAboveText = false">
-									<v-list-item-title>Chords in text surrounded by []</v-list-item-title>
-									<v-list-item-icon>
-										<v-icon>mdi-code-brackets</v-icon>
-									</v-list-item-icon>
+								<v-list-item @click.stop="tempSource.standardNotation = !tempSource.standardNotation">
+									<v-list-item-title class="mr-3">{{ tempSource.standardNotation ? "Standard notation (A B C D E F G)" : "German notation (A H C D E F G)" }}</v-list-item-title>
+									<v-icon class="mr-1" large :color="!tempSource.standardNotation ? 'primary' : ''">mdi-alpha-h</v-icon>
+									<v-switch @click.stop v-model="tempSource.standardNotation" inset color="gray"> </v-switch>
+									<v-icon large class="mr-n1 ml-n2" :color="tempSource.standardNotation ? 'primary' : ''">mdi-alpha-b</v-icon>
 								</v-list-item>
 							</v-list>
 						</v-menu>
 					</template>
-					<span>Chords position</span>
+					<span>Chords settings</span>
 				</v-tooltip>
 				<!-- <v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
 					<v-tooltip top>
@@ -146,6 +150,7 @@ export default {
 					author: "",
 					text: "",
 					chordsAboveText: true,
+					standardNotation: true,
 					trimLines: true,
 					public: true,
 				};
@@ -166,6 +171,7 @@ export default {
 					author: "",
 					text: "",
 					chordsAboveText: true,
+					standardNotation: true,
 					trimLines: false,
 					public: true,
 				};
@@ -277,7 +283,7 @@ export default {
 				} else if (chordsAboveText && this.isChordsLine(line)) {
 					lineType = "chords";
 					while ((match = this.aloneChordsregex.exec(line))) {
-						chords.push([match.index, Chord.get(match[0].replace("mi", "m"))]);
+						chords.push([match.index, Chord.get(this.parseChord(match[0]))]);
 					}
 				} else if (!chordsAboveText) {
 					while ((bracketMatch = /\[(.*?)\]/.exec(line))) {
@@ -285,9 +291,9 @@ export default {
 						while ((match = this.chordsInBracketRegex.exec(bracketMatch[1]))) {
 							if (chordsInBracket.length != 0) {
 								let lastChord = chordsInBracket[chordsInBracket.length - 1];
-								chordsInBracket.push([lastChord[0] + lastChord[1].length + 1, Chord.get(match[0].replace("mi", "m"))]);
+								chordsInBracket.push([lastChord[0] + lastChord[1].length + 1, Chord.get(this.parseChord(match[0]))]);
 							} else {
-								chordsInBracket.push([bracketMatch.index, Chord.get(match[0].replace("mi", "m"))]);
+								chordsInBracket.push([bracketMatch.index, Chord.get(this.parseChord(match[0]))]);
 							}
 						}
 
@@ -332,6 +338,15 @@ export default {
 			return lineArray.filter((e) => {
 				return e.lineType != "chords";
 			});
+		},
+
+		parseChord(chord) {
+			chord = chord.replace("mi", "m");
+			if (!this.tempSource.standardNotation) {
+				chord = chord.replace("B", "A#");
+				chord = chord.replace("H", "B");
+			}
+			return chord;
 		},
 
 		relativeTextWidth(str) {
