@@ -151,11 +151,11 @@
 				</v-row>
 				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
-					<v-row v-if="showTabs">
-						<v-col v-for="chord in distinctChords" :key="chord" style="max-width: 100px">
-							<div :id="chord"></div>
-						</v-col>
-					</v-row>
+					<div v-if="showTabs" class="d-flex">
+						<div v-for="chord in distinctChords" :key="chord.symbol" style="max-width: 100px" class="ml-3">
+							<div :id="chord.symbol"></div>
+						</div>
+					</div>
 				</v-scroll-y-transition>
 				<!----------------------------------- Song text ----------------------------------->
 				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
@@ -257,7 +257,7 @@ export default {
 		renderTabs() {
 			if (this.showTabs && !this.updatingFontSize) {
 				this.distinctChords.forEach((chord) => {
-					jtab.render(document.getElementById(chord), chord);
+					jtab.render(document.getElementById(chord.symbol), chord.symbol);
 				});
 			}
 		},
@@ -360,8 +360,9 @@ export default {
 			(this.song?.sections ?? []).forEach((section) => {
 				(section.lines ?? []).forEach((line) => {
 					(line.chords ?? []).forEach((chord) => {
-						if (!chords.includes(chord[1].symbol)) {
-							chords.push(chord[1].symbol);
+						let transposed = this.transposeChord(chord[1]);
+						if (!chords.map((e) => e.symbol).includes(transposed.symbol)) {
+							chords.push(transposed);
 						}
 					});
 				});
