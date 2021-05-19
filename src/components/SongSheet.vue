@@ -1,8 +1,7 @@
 <template>
 	<fullscreen :fullscreen.sync="fullscreen" :background="$vuetify.theme.dark ? '#121212' : '#ffffff'">
-		<!-- <template v-slot:extension> -->
-		<!-- </template> -->
 		<v-sheet style="position: relative" :class="type === 'modal' ? 'elevation-0' : 'elevation-2'">
+			<!----------------------------------- Header toolbar ----------------------------------->
 			<v-toolbar height="50px" class="elevation-0">
 				<v-toolbar-items>
 					<v-btn v-show="type === 'modal'" icon @click.stop="$emit('cancel')" class="ml-n3">
@@ -43,6 +42,7 @@
 					</v-fab-transition>
 				</v-toolbar-items>
 
+				<!----------------------------------- Dropdown menu ----------------------------------->
 				<v-toolbar-items>
 					<v-menu rounded="large" transition="slide-y-transition" bottom>
 						<template v-slot:activator="{ on: onMenu }">
@@ -53,13 +53,6 @@
 							</v-fab-transition>
 						</template>
 						<v-list class="py-0">
-							<!-- <v-list-item :disabled="editable" :to="'/edit-song/' + songId">
-								<v-list-item-icon>
-									<v-icon :disabled="editable">mdi-pencil-outline</v-icon>
-								</v-list-item-icon>
-								<v-list-item-title>Edit</v-list-item-title>
-              </v-list-item>-->
-
 							<v-list-item :disabled="true">
 								<v-list-item-icon>
 									<v-icon :disabled="true">mdi-printer</v-icon>
@@ -96,6 +89,21 @@
 									<v-select @click.stop.prevent v-model="currentFontSizePreference" :items="fontSizePreferences" label="Font size" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
 								</v-list-item-content>
 							</v-list-item>
+
+							<v-list-item>
+								<v-tooltip top>
+									<template v-slot:activator="{ on, attrs }">
+										<v-list-item-icon v-bind="attrs" v-on="on">
+											<v-icon large class="ml-n1 mr-n3">{{ currentNotation == "German (A H C D E F G)" ? "mdi-alpha-b" : "mdi-alpha-h" }}</v-icon>
+										</v-list-item-icon>
+									</template>
+									<span>Chord notation</span>
+								</v-tooltip>
+								<v-list-item-content>
+									<v-select @click.stop.prevent v-model="currentNotation" :items="notations" item-text="text" item-value="value" label="Notation" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
+								</v-list-item-content>
+							</v-list-item>
+
 							<v-list-item @click.stop="showTabs = !showTabs">
 								<v-list-item-icon>
 									<v-icon>mdi-help-circle-outline</v-icon>
@@ -181,8 +189,8 @@ export default {
 		return {
 			transpose: 0,
 			dynamicSectionFontSize: 20,
-			fontSizePreferences: ["Small", "Medium", "Large"],
 			currentFontSizePreference: "Small",
+			currentNotation: "German (A H C D E F G)",
 			maxFontSize: 35,
 			fullscreen: false,
 			showTabs: true,
@@ -213,9 +221,9 @@ export default {
 				if (e.chords?.length) {
 					e.chords.forEach((ch, i) => {
 						if (i == 0) {
-							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.transposeChord(ch[1]).symbol + "</span>");
+							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])).symbol + "</span>");
 						} else {
-							chordLine = chordLine.insert(chordLine.length + (ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length)), "<span class='chord'>" + this.transposeChord(ch[1]).symbol + "</span>");
+							chordLine = chordLine.insert(chordLine.length + (ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length)), "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])).symbol + "</span>");
 						}
 					});
 					chordLine += "<br>";
@@ -243,6 +251,15 @@ export default {
 		// 	});
 		// 	return textWithChordsAbove + "</span>";
 		// },
+
+		postprocessChord(chord) {
+			let chordSymbol = chord.symbol;
+			if (this.currentNotation == "German (A H C D E F G)") {
+				chordSymbol = chordSymbol.replace("B", "A#");
+				chordSymbol = chordSymbol.replace("H", "B");
+			}
+			return Chord.get(chordSymbol);
+		},
 
 		transposeChord(chord) {
 			var scale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -402,12 +419,14 @@ export default {
 			songListLoading: "getSongListLoading",
 			user: "getUser",
 			userLogged: "getUserLogged",
+			preferences: "getUserPreferences",
+			notations: "getNotations",
+			fontSizePreferences: "getFontSizePreferences",
 		}),
 	},
 
 	created() {
 		window.addEventListener("resize", this.onResize);
-		this.multipleColumns = !this.viewportSize.xs;
 	},
 	destroyed() {
 		window.removeEventListener("resize", this.onResize);
@@ -417,6 +436,10 @@ export default {
 		this.renderTabs();
 	},
 	mounted() {
+		this.multipleColumns = !this.viewportSize.xs;
+		this.currentFontSizePreference = this.preferences.fontSize;
+		this.currentNotation = this.preferences.notation;
+
 		this.updateFontSize();
 		this.renderTabs();
 	},

@@ -10,9 +10,15 @@
 				</v-btn>
 			</v-col>
 			<v-divider class="hidden-md-and-up"></v-divider>
-			<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 8">
-				<v-scroll-y-transition>
-					<song-sheet v-if="formatedSong !== undefined && (formatedSong.author || formatedSong.title || formatedSong.sections.length > 0)" :expanded="expanded" :song="formatedSong" class="pl-md-6"></song-sheet>
+			<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 8" class="pl-md-9">
+				<v-scroll-y-transition hide-on-leave>
+					<song-sheet v-if="showSongSheet" :expanded="expanded" :song="formatedSong"></song-sheet>
+				</v-scroll-y-transition>
+				<v-scroll-y-transition hide-on-leave>
+					<div v-if="!showSongSheet" style="height:80vh" class="d-flex justify-center align-center">
+						<import-songs></import-songs>
+						<!-- </div> -->
+					</div>
 				</v-scroll-y-transition>
 			</v-col>
 		</v-row>
@@ -23,6 +29,7 @@
 <script>
 import SongSheet from "../components/SongSheet";
 import SongEditor from "../components/SongEditor";
+import ImportSongs from "../components/Others/ImportSongs";
 import { mapGetters } from "vuex";
 
 export default {
@@ -54,10 +61,14 @@ export default {
 			user: "getUser",
 			showTooltips: "getShowTooltips",
 		}),
+		showSongSheet() {
+			return this.formatedSong !== undefined && (this.formatedSong.author || this.formatedSong.title || this.formatedSong.sections.length > 0);
+		},
 	},
 	components: {
 		"song-sheet": SongSheet,
 		"song-editor": SongEditor,
+		"import-songs": ImportSongs,
 	},
 
 	created() {

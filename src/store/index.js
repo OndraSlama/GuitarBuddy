@@ -10,6 +10,13 @@ export default new Vuex.Store({
 		currentPage: "",
 		publicSongs: [],
 		userSongBooks: {},
+		userPreferences: {},
+		defaultPreferences: {
+			notation: "German (A H C D E F G)",
+			fontSize: "Medium",
+		},
+		fontSizePreferences: ["Small", "Medium", "Large"],
+		notations: ["Standard (A B C D E F G)", "German (A H C D E F G)"],
 		userSongs: [],
 		authors: [],
 		loadedSong: null,
@@ -39,8 +46,12 @@ export default new Vuex.Store({
 		},
 
 		getUser: (state) => state.user,
-		getUserSongBooks: (state) => state.userSongBooks,
 		getUserSongs: (state) => state.userSongs,
+		getUserSongBooks: (state) => state.userSongBooks,
+		getUserPreferences: (state) => state.userPreferences,
+		getDefaultPreferences: (state) => state.defaultPreferences,
+		getFontSizePreferences: (state) => state.fontSizePreferences,
+		getNotations: (state) => state.notations,
 		getAuthors: (state) => state.authors,
 		getPublicSongs: (state) => state.publicSongs,
 		getUserLogged: (state) => state.user !== null && state.user !== undefined,
@@ -203,6 +214,9 @@ export default new Vuex.Store({
 		setUserSongBooks(state, userSongBooks){
             state.userSongBooks = {...userSongBooks}
 		},
+		setUserPreferences(state, userPreferences){
+            state.userPreferences = {...userPreferences}
+		},
 		setAuthors(state, authors){
 			state.authors = authors
 		},
@@ -259,8 +273,6 @@ export default new Vuex.Store({
 							...obj[key],
 						});
                     }
-                    // console.log("downloading data from firebase:");
-                    // console.log(obj);
 					commit("setPublicSongs", publicSongs);
 					commit("setPublicSongListLoading", false);
 				});
@@ -295,13 +307,10 @@ export default new Vuex.Store({
 									id: key,
 									...obj["songs"][key],
 								});
-                            }
-
-                            // console.log("downloading data from firebase:");
-                            // console.log(obj);
-                            
+                            }                            
                             commit("setUserSongs", userSongs);
-
+							
+							// Parse user songbooks
                             let songbooks = obj["playBooks"];
                             for (const key in songbooks) {
                                 for (const songid in songbooks[key]) {
@@ -310,9 +319,18 @@ export default new Vuex.Store({
                                     }
                                 }                                  
                             }
-							commit("setUserSongBooks", {...obj["playBooks"]});
+							commit("setUserSongBooks", {...songbooks});
+
+							// Parse user preferences
+							if(obj["preferences"]){
+								commit("setUserPreferences", {...obj["preferences"]});
+							}else{
+								commit("setUserPreferences", getters.getDefaultPreferences);
+							}
 						}
 					});
+			}else{
+				commit("setUserPreferences", getters.getDefaultPreferences);
 			}
 		},
 
@@ -323,6 +341,29 @@ export default new Vuex.Store({
 					.ref("users/" + getters.getUser.uid)
 					.off("value");
 			}
+		},
+
+		updatePreferences({getters}, payload){
+			return new Promise((resolve, reject) => {
+				if (!getters.getUserLogged) {
+					reject()
+				}
+				
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/preferences")
+					.update({
+						...payload,
+					})
+					.then(() => {
+						resolve();
+					})
+					.catch((e) => {
+						console.log(e);
+						reject();
+					});
+				
+			});
 		},
 
 		addSong({ dispatch, getters }, payload) {
@@ -598,11 +639,9 @@ export default new Vuex.Store({
 					if (user) {
 						commit("setUser", user);
 						dispatch("loadUserDataOn");
-						// dispatch("onSongsChange");
 						resolve(user);
 					} else {
 						dispatch("loadUserDataOff");
-						// dispatch("offSongsChange");
 						commit("logout");
 					}
 				});

@@ -3,7 +3,9 @@
 		<v-app-bar clipped-left flat app :dense="viewportSize.xs" :hide-on-scroll="viewportSize.smAndDown" class="navbar">
 			<v-app-bar-nav-icon v-if="userLogged" class="hidden-lg-and-up" @click.stop="toggleSongList()"></v-app-bar-nav-icon>
 
-			<v-toolbar-title @click="$router.push('/')" class="hidden-sm-and-down">Guitar Buddy</v-toolbar-title>
+			<!-- <v-toolbar-title @click="$router.push('/')">
+				<v-icon large class="ml-n3 mr-2">mdi-guitar-acoustic</v-icon>
+			</v-toolbar-title> -->
 			<v-spacer></v-spacer>
 
 			<v-scroll-x-transition hide-on-leave>
@@ -27,17 +29,17 @@
 				<v-btn icon @click="$vuetify.theme.dark = !$vuetify.theme.dark">
 					<v-icon>mdi-invert-colors</v-icon>
 				</v-btn>
-				<v-btn :icon ="viewportSize.smAndDown" v-if="!userLogged" text @click="signIn">
-					<v-icon :left ="viewportSize.smAndDown">mdi-login-variant</v-icon>
+				<v-btn :icon="viewportSize.smAndDown" v-if="!userLogged" text @click="signIn">
+					<v-icon :left="viewportSize.smAndDown">mdi-login-variant</v-icon>
 					<span class="hidden-sm-and-down">Sign In</span>
 				</v-btn>
 				<!-- <login-dialog></login-dialog> -->
-				<v-btn :icon ="viewportSize.smAndDown" v-if="userLogged" text @click.stop="signOut">
+				<v-btn :icon="viewportSize.smAndDown" v-if="userLogged" text @click.stop="signOut">
 					<v-icon :left="viewportSize.smAndDown">mdi-login-variant</v-icon>
 					<span class="hidden-sm-and-down">Sign Out</span>
 				</v-btn>
 				<v-btn icon v-if="userLogged" to="/user">
-					<img :style="{ 'width': viewportSize.smAndDown ? '35px' : '45px', 'height': viewportSize.smAndDown ? '35px' : '45px', 'border-radius': '50%' }" :src="user.photoURL" :alt="user.displayName" />
+					<img :style="{ width: viewportSize.smAndDown ? '35px' : '45px', height: viewportSize.smAndDown ? '35px' : '45px', 'border-radius': '50%' }" :src="user.photoURL" :alt="user.displayName" />
 				</v-btn>
 			</v-toolbar-items>
 		</v-app-bar>
