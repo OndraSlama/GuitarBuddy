@@ -22,8 +22,9 @@ export default {
 			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?(\\d)(\\.|:|\\))?\\)?[\\s]*", "Verse $2\n");
 			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?bridge(\\.|:|\\))?\\)?[\\s]*", "Bridge\n");
 			text = this.replaceAndFill(text, "(^|\\n)[\\s]*\\(?ending(\\.|:|\\))?\\)?[\\s]*", "Ending\n");
-
-			// text = text.replace(/(^|\n)[\s]*\(?r(f|e|ef)?(\.|:|\))\)?[\s]*/gi, "\nChorus\n");
+			
+			text = text.replace(/\{soc\}/gi, "Chorus");
+			text = text.replace(/\{.*?\}/gi, "");
 			// text = text.replace(/(^|\n)[\s]*\(?(\d)(\.|:|\))\)?[\s]*/gi, "\nVerse $2\n");
 			// text = text.replace(/(^|\n)[\s]*\(?bridge(\.|:|\))\)?[\s]*/gi, "\nBridge\n");
 			// text = text.replace(/(^|\n)[\s]*\(?ending(\.|:|\))\)?[\s]*/gi, "\nEnding\n");
@@ -44,7 +45,8 @@ export default {
 				} else if (chordsAboveText && this.isChordsLine(line)) {
 					lineType = "chords";
 					while ((match = this.aloneChordsregex.exec(line))) {
-						chords.push([match.index, Chord.get(this.parseChord(match[0]))]);
+						let chord = Chord.get(this.parseChord(match[0]))
+						if (!chord.empty) chords.push([match.index, chord]);
 					}
 				} else if (!chordsAboveText) {
 					while ((bracketMatch = /\[(.*?)\]/.exec(line))) {
@@ -52,9 +54,11 @@ export default {
 						while ((match = this.chordsInBracketRegex.exec(bracketMatch[1]))) {
 							if (chordsInBracket.length != 0) {
 								let lastChord = chordsInBracket[chordsInBracket.length - 1];
-								chordsInBracket.push([lastChord[0] + lastChord[1].length + 1, Chord.get(this.parseChord(match[0]))]);
+								let chord = Chord.get(this.parseChord(match[0]))
+								if (!chord.empty) chordsInBracket.push([lastChord[0] + lastChord[1].length + 1, chord]);
 							} else {
-								chordsInBracket.push([bracketMatch.index, Chord.get(this.parseChord(match[0]))]);
+								let chord = Chord.get(this.parseChord(match[0]))
+								if (!chord.empty) chordsInBracket.push([bracketMatch.index, chord]);
 							}
 						}
 

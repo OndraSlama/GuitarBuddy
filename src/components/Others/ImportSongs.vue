@@ -5,16 +5,21 @@
 			Import songs
 		</div>
 		<v-form ref="form">
-			<v-btn icon outlined color="primary" @click="parseFile" width="100" height="100" class="align-self-center">
+			<v-btn icon outlined color="primary" @click="validateAndOpenDialog" width="100" height="100" class="align-self-center">
 				<v-icon size="60" color="primary">mdi-import</v-icon>
 			</v-btn>
 			<v-file-input v-model="file" outlined show-size :rules="fileRules" accept=".chordpro" label="ChordPro file input" class="mt-10 mx-auto"></v-file-input>
 		</v-form>
+
+		<import-settings-dialog v-model="openSettingsDialog" :importSettings="importSettings" v-on:accept="parseFile" />
+		<import-confirmation-dialog v-model="openConfirmationDialog" :songs="formatedSongs" v-on:accept="saveSongs" />
 	</div>
 </template>
 
 <script>
 import songParser from "../../mixins/songParser";
+import ImportSongSettingsDialog from "../Dialogs/ImportSongSettingsDialog";
+import ImportConfirmationDialog from "../Dialogs/ImportConfirmationDialog";
 import { mapGetters } from "vuex";
 export default {
 	mixins: [songParser],
@@ -23,13 +28,28 @@ export default {
 			fileRules: [(value) => !!value || "No file selected"],
 			file: null,
 			problems: [],
+			formatedSongs: [],
+
+			importSettings: {
+				chordsAboveText: false,
+				public: false,
+				standardNotation: false,
+				trimLines: false,
+			},
+			openSettingsDialog: false,
+			openConfirmationDialog: false,
 		};
 	},
 
 	methods: {
-		parseFile() {
+		validateAndOpenDialog() {
 			this.$refs.form.validate();
 			if (!this.file) return;
+			this.openSettingsDialog = true;
+		},
+
+		parseFile(importSettings) {
+			this.importSettings = { ...importSettings };
 
 			const reader = new FileReader();
 			reader.readAsText(this.file);
@@ -39,14 +59,18 @@ export default {
 
 				let content = reader.result;
 				let rawSongs = content.split("{new_song}");
-				let formatedSongs = this.formatSongs(rawSongs);
+				this.formatedSongs = this.formatSongs(rawSongs);
 
-				formatedSongs.forEach((song) => {
-					this.$store.dispatch("addSong", song).then(() => console.log("Song: '" + song.title + "' was added to database."));
-				});
+				if (this.problems.length > 0) alert(this.problems);
 
-				if (this.problems) alert(this.problems);
+				this.openConfirmationDialog = true;
 			};
+		},
+
+		saveSongs() {
+			this.formatedSongs.forEach((song) => {
+				this.$store.dispatch("addSong", song).then(() => console.log("Song: '" + song.title + "' was added to database."));
+			});
 		},
 
 		formatSongs(rawSongs) {
@@ -62,10 +86,8 @@ export default {
 						input: {
 							title,
 							author,
-							chordsAboveText: false,
-							public: false,
 							text: this.findText(rawSong),
-							trimLines: false,
+							...this.importSettings,
 						},
 					};
 					formatedSongs.push(formatedSong);
@@ -103,6 +125,17 @@ export default {
 		...mapGetters({
 			preferences: "getUserPreferences",
 		}),
+	},
+
+	components: {
+		"import-settings-dialog": ImportSongSettingsDialog,
+		"import-confirmation-dialog": ImportConfirmationDialog,
+	},
+
+	watch: {
+		"importSettings.standardNotation": function(newValue) {
+			this.standardNotation = newValue;
+		},
 	},
 
 	mounted() {

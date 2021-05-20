@@ -60,8 +60,8 @@
 									<v-list-item @click.stop="onForks">
 										<v-list-item-title>Popularity</v-list-item-title>
 										<v-list-item-icon>
-											<v-icon v-show="filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-descending</v-icon>
-											<v-icon v-show="!filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-ascending</v-icon>
+											<v-icon v-show="filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-ascending</v-icon>
+											<v-icon v-show="!filters.forksOrder" :color="filters.orderBy == 'forks' ? 'primary' : ''">mdi-sort-numeric-descending</v-icon>
 										</v-list-item-icon>
 									</v-list-item>
 								</v-list>
@@ -104,7 +104,7 @@
 														<span>{{ song.forks }}</span>
 													</div>
 												</template>
-												<span>Added to collections</span>
+												<span>Popularity</span>
 											</v-tooltip>
 
 											<v-tooltip top>

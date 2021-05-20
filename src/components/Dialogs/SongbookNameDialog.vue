@@ -1,7 +1,7 @@
 <template>
 	<v-dialog v-model="dialogOpened" max-width="400px" transition="dialog-transition">
 		<v-card>
-			<v-card-title class="headline">Define song book name</v-card-title>
+			<v-card-title class="headline">Create new Song Book</v-card-title>
 
 			<v-card-text>
 				<v-text-field class="" v-model="songBookName" label="Song book name" hide-details="auto"></v-text-field>
