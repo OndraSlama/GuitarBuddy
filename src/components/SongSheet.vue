@@ -167,7 +167,7 @@
 				</v-scroll-y-transition>
 				<!----------------------------------- Song text ----------------------------------->
 				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', currentPreferences.multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
-					<v-card :class="['mb-3 ', 'section', 'elevation-0', currentPreferences.multipleColumns ? 'multiple-columns mr-3' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
+					<v-card :class="['mb-3 ', 'section', 'elevation-0', currentPreferences.multipleColumns ? 'multiple-columns mr-3' : '', section.name.toLowerCase()]" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
 						<v-divider v-if="!currentPreferences.multipleColumns && i > 0" class="mb-3"></v-divider>
 						<div v-html="formatSection(section)"></div>
 					</v-card>
@@ -482,6 +482,22 @@ export default {
 	padding: 10px;
 	border-style: dotted;
 	// margin-right: 20px;
+}
+
+.section.multiple-columns.chorus {
+	background-color: rgba(150, 111, 3, 0.137);
+}
+
+.section.multiple-columns.intro {
+	background-color: rgba(2, 63, 194, 0.096);
+}
+
+.section.multiple-columns.ending {
+	background-color: rgba(34, 194, 2, 0.096);
+}
+
+.section.multiple-columns.bridge {
+	background-color: rgba(133, 2, 194, 0.055);
 }
 
 .floating-buttons {
