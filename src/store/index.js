@@ -14,6 +14,8 @@ export default new Vuex.Store({
 		defaultPreferences: {
 			notation: "German (A H C D E F G)",
 			fontSize: "Medium",
+			multipleColumns: true,
+			showTabs: true,
 		},
 		fontSizePreferences: ["Small", "Medium", "Large"],
 		notations: ["Standard (A B C D E F G)", "German (A H C D E F G)"],

@@ -32,7 +32,7 @@
 						<span v-show="!collapse">Delete</span>
 					</v-btn>
 					<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
-					<!-- <v-select @click.stop.prevent prepend-icon="mdi-format-size" v-model="currentFontSizePreference" :items="fontSizePreferences" label="Font size" solo flat></v-select> -->
+					<!-- <v-select @click.stop.prevent prepend-icon="mdi-format-size" v-model="currentPreferences.fontSize" :items="fontSizePreferences" label="Font size" solo flat></v-select> -->
 
 					<v-fab-transition>
 						<v-btn large icon @click="onFullscreenToggle">
@@ -86,7 +86,7 @@
 									<span>Font size preference</span>
 								</v-tooltip>
 								<v-list-item-content>
-									<v-select @click.stop.prevent v-model="currentFontSizePreference" :items="fontSizePreferences" label="Font size" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
+									<v-select @click.stop.prevent v-model="currentPreferences.fontSize" :items="fontSizePreferences" label="Font size" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
 								</v-list-item-content>
 							</v-list-item>
 
@@ -94,17 +94,17 @@
 								<v-tooltip top>
 									<template v-slot:activator="{ on, attrs }">
 										<v-list-item-icon v-bind="attrs" v-on="on">
-											<v-icon large class="ml-n1 mr-n3">{{ currentNotation == "German (A H C D E F G)" ? "mdi-alpha-b" : "mdi-alpha-h" }}</v-icon>
+											<v-icon large class="ml-n1 mr-n3">{{ currentPreferences.notation == "German (A H C D E F G)" ? "mdi-alpha-b" : "mdi-alpha-h" }}</v-icon>
 										</v-list-item-icon>
 									</template>
 									<span>Chord notation</span>
 								</v-tooltip>
 								<v-list-item-content>
-									<v-select @click.stop.prevent v-model="currentNotation" :items="notations" item-text="text" item-value="value" label="Notation" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
+									<v-select @click.stop.prevent v-model="currentPreferences.notation" :items="notations" item-text="text" item-value="value" label="Notation" class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-select>
 								</v-list-item-content>
 							</v-list-item>
 
-							<v-list-item @click.stop="showTabs = !showTabs">
+							<v-list-item @click.stop="currentPreferences.showTabs = !currentPreferences.showTabs">
 								<v-list-item-icon>
 									<v-icon>mdi-help-circle-outline</v-icon>
 								</v-list-item-icon>
@@ -114,7 +114,7 @@
 										Show chord tabs
 									</v-col>
 									<v-col>
-										<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="showTabs" inset></v-switch>
+										<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="currentPreferences.showTabs" inset></v-switch>
 									</v-col>
 								</v-row>
 								<!-- </v-list-item-content> -->
@@ -136,7 +136,7 @@
 					<v-col class="text-start ml-n5" style="max-width: 290px; min-width: 290px" align-self="start">
 						<v-tooltip top>
 							<template v-slot:activator="{ on, attrs }">
-								<v-btn text large @click="onColumnChange(false)" v-bind="attrs" :color="!multipleColumns ? 'primary' : ''" v-on="on">
+								<v-btn text large @click="onColumnChange(false)" v-bind="attrs" :color="!currentPreferences.multipleColumns ? 'primary' : ''" v-on="on">
 									<v-icon left>mdi-table-column</v-icon>
 									<span> Standard </span>
 									<!-- <span>Column</span> -->
@@ -147,7 +147,7 @@
 
 						<v-tooltip top>
 							<template v-slot:activator="{ on, attrs }">
-								<v-btn text large @click="onColumnChange(true)" v-bind="attrs" :color="multipleColumns ? 'primary' : ''" v-on="on" class="mr-n5">
+								<v-btn text large @click="onColumnChange(true)" v-bind="attrs" :color="currentPreferences.multipleColumns ? 'primary' : ''" v-on="on" class="mr-n5">
 									<v-icon left>mdi-view-dashboard-outline</v-icon>
 									<span> Dynamic </span>
 									<!-- <span>Dynamic</span> -->
@@ -159,16 +159,16 @@
 				</v-row>
 				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
-					<div v-if="showTabs" class="d-flex">
+					<div v-if="currentPreferences.showTabs" class="d-flex">
 						<div v-for="chord in distinctChords" :key="chord.symbol" style="max-width: 100px" class="ml-3">
 							<div :id="chord.symbol"></div>
 						</div>
 					</div>
 				</v-scroll-y-transition>
 				<!----------------------------------- Song text ----------------------------------->
-				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
-					<v-card :class="['mb-3 ', 'section', 'elevation-0', multipleColumns ? 'multiple-columns mt-3 mr-6' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
-						<v-divider v-if="!multipleColumns && i > 0" class="mb-3"></v-divider>
+				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', currentPreferences.multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
+					<v-card :class="['mb-3 ', 'section', 'elevation-0', currentPreferences.multipleColumns ? 'multiple-columns mr-3' : '']" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
+						<v-divider v-if="!currentPreferences.multipleColumns && i > 0" class="mb-3"></v-divider>
 						<div v-html="formatSection(section)"></div>
 					</v-card>
 				</div>
@@ -189,13 +189,15 @@ export default {
 		return {
 			transpose: 0,
 			dynamicSectionFontSize: 20,
-			currentFontSizePreference: "Small",
-			currentNotation: "German (A H C D E F G)",
+			currentPreferences: {
+				fontSize: "Small",
+				notation: "German (A H C D E F G)",
+				showTabs: true,
+				multipleColumns: true,
+			},
 			maxFontSize: 35,
 			fullscreen: false,
-			showTabs: true,
 			snackbar: false,
-			multipleColumns: true,
 			updatingFontSize: true,
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
@@ -205,7 +207,7 @@ export default {
 	methods: {
 		onColumnChange(multipleColumns) {
 			//   this.minFontSize = 9;
-			this.multipleColumns = multipleColumns;
+			this.currentPreferences.multipleColumns = multipleColumns;
 			this.dynamicSectionFontSize = this.maxFontSize;
 		},
 
@@ -221,9 +223,10 @@ export default {
 				if (e.chords?.length) {
 					e.chords.forEach((ch, i) => {
 						if (i == 0) {
-							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])).symbol + "</span>");
+							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])) + "</span>");
 						} else {
-							chordLine = chordLine.insert(chordLine.length + (ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length)), "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])).symbol + "</span>");
+							let charPos = ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length);
+							chordLine = chordLine.insert(chordLine.length + (charPos < 1 ? 1 : charPos), "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])) + "</span>");
 						}
 					});
 					chordLine += "<br>";
@@ -254,11 +257,11 @@ export default {
 
 		postprocessChord(chord) {
 			let chordSymbol = chord.symbol;
-			if (this.currentNotation == "German (A H C D E F G)") {
-				chordSymbol = chordSymbol.replace("B", "A#");
-				chordSymbol = chordSymbol.replace("H", "B");
+			if (this.currentPreferences.notation == "German (A H C D E F G)") {
+				chordSymbol = chordSymbol.replace("B", "H");
+				chordSymbol = chordSymbol.replace("A#", "B");
 			}
-			return Chord.get(chordSymbol);
+			return chordSymbol;
 		},
 
 		transposeChord(chord) {
@@ -272,21 +275,25 @@ export default {
 		},
 
 		renderTabs() {
-			if (this.showTabs && !this.updatingFontSize) {
+			if (this.currentPreferences.showTabs && !this.updatingFontSize) {
 				this.distinctChords.forEach((chord) => {
-					jtab.render(document.getElementById(chord.symbol), chord.symbol);
+					try {
+						jtab.render(document.getElementById(chord.symbol), chord.symbol);
+					} catch (e) {
+						console.log(e);
+					}
 				});
 			}
 		},
 
 		updateFontSize() {
-			//   if (this.multipleColumns) {
+			//   if (this.currentPreferences.multipleColumns) {
 			this.updatingFontSize = false;
 			if (this.$refs.songSheet == undefined) return;
 			const width = this.$refs.songSheet.clientWidth;
 			const overflowDiff = width - this.$refs.songSheet.scrollWidth;
 			if (overflowDiff < 0 && this.dynamicSectionFontSize > this.minFontSize) {
-				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.05, 1.5);
+				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.05, 0.8);
 				this.updatingFontSize = true;
 			}
 
@@ -389,7 +396,9 @@ export default {
 		},
 
 		minFontSize() {
-			switch (this.fontSizePreferences.indexOf(this.currentFontSizePreference)) {
+			if (this.currentPreferences.multipleColumns) return 5;
+
+			switch (this.fontSizePreferences.indexOf(this.currentPreferences.fontSize)) {
 				case 0:
 					return 9;
 				case 1:
@@ -406,7 +415,7 @@ export default {
 		},
 
 		sectionFontSize() {
-			if (!this.multipleColumns) {
+			if (!this.currentPreferences.multipleColumns) {
 				return this.minFontSize; //Math.min(Math.max(this.minFontSize, 16), this.dynamicSectionFontSize);
 			} else {
 				return this.dynamicSectionFontSize;
@@ -426,6 +435,7 @@ export default {
 	},
 
 	created() {
+		this.currentPreferences = { ...this.storePreferences };
 		window.addEventListener("resize", this.onResize);
 	},
 	destroyed() {
@@ -436,10 +446,9 @@ export default {
 		this.renderTabs();
 	},
 	mounted() {
-		this.multipleColumns = !this.viewportSize.xs;
-		this.currentFontSizePreference = this.preferences.fontSize;
-		this.currentNotation = this.preferences.notation;
+		this.currentPreferences = { ...this.preferences };
 
+		// this.currentPreferences.multipleColumns = !this.viewportSize.xs;
 		this.updateFontSize();
 		this.renderTabs();
 	},
@@ -466,9 +475,12 @@ export default {
 }
 
 .section.multiple-columns {
-	// display: inline-block;
-	// border: 1px solid green;
-	// font-size: 100%;
+	display: inline-block;
+	background-color: rgba(139, 139, 139, 0.082);
+	border-radius: 5px;
+	// border: 1px solid grey;
+	padding: 10px;
+	border-style: dotted;
 	// margin-right: 20px;
 }
 
@@ -489,6 +501,6 @@ export default {
 	justify-content: space-around;
 	// align-items: center;
 	// align-content: space-around;
-	max-height: 90vh;
+	max-height: 85vh;
 }
 </style>

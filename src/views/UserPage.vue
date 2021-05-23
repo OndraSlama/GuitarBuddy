@@ -14,7 +14,8 @@
 			<v-card-title primary-title>
 				Preferences
 			</v-card-title>
-			<div>
+
+			<div class="pb-2">
 				<div class="d-flex justify-space-between mx-4" style="height:50px;">
 					<div class=" align-self-center">Preferred font size</div>
 					<div class="" style="width: 50%">
@@ -41,30 +42,31 @@
 							<v-icon :left="viewportSize.lgAndUp">mdi-view-dashboard-outline</v-icon>
 							<span v-if="viewportSize.lgAndUp">Dynamic</span>
 						</v-btn>
-
-						<!-- <v-tooltip top>
-							<template v-slot:activator="{ on, attrs }">
-								<v-btn text large @click="currentPreferences.multipleColumns = false" v-bind="attrs" :color="!currentPreferences.multipleColumns ? 'primary' : ''" v-on="on">
-									<v-icon left>mdi-table-column</v-icon>
-									<span> Standard </span>
-								</v-btn>
-							</template>
-							<span>Song in one long column</span>
-						</v-tooltip>
-
-						<v-tooltip top>
-							<template v-slot:activator="{ on, attrs }">
-								<v-btn text large @click="currentPreferences.multipleColumns = true" v-bind="attrs" :color="currentPreferences.multipleColumns ? 'primary' : ''" v-on="on" class="mr-n5">
-									<v-icon left>mdi-view-dashboard-outline</v-icon>
-									<span> Dynamic </span>
-								</v-btn>
-							</template>
-							<span>Stack song in multiple columns to fit screen</span>
-						</v-tooltip> -->
 					</div>
 				</div>
+
+				<div class="d-flex justify-space-between mx-4" style="height:50px;">
+					<div class=" align-self-center">Show chord tabs</div>
+					<div class="align-self-center pl-2" style="width: 50%">
+						<v-switch class="mt-0 mb-n2 py-0" style="height: 30px; width:50px" @click.stop v-model="currentPreferences.showTabs" inset></v-switch>
+					</div>
+				</div>
+
+				<!-- <div @click.stop="currentPreferences.showTabs = !showTabs">
+					<v-row style="height: 50px ">
+						<v-col style="height: 50px; min-width: 150px; flex-grow: 5">
+							Show chord tabs
+						</v-col>
+						<v-col>
+							<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="currentPreferences.showTabs" inset></v-switch>
+						</v-col>
+					</v-row>
+				</div> -->
 			</div>
-			{{ currentPreferences }}
+
+			<!-- <v-divider></v-divider> -->
+
+			<!-- {{ currentPreferences }} -->
 		</v-card>
 	</div>
 </template>
@@ -87,7 +89,7 @@ export default {
 		}),
 	},
 
-	created() {
+	mounted() {
 		this.$store.commit("setCurrentPage", this.user.displayName);
 		this.currentPreferences = { ...this.storePreferences };
 	},

@@ -68,8 +68,14 @@ export default {
 		},
 
 		saveSongs() {
-			this.formatedSongs.forEach((song) => {
-				this.$store.dispatch("addSong", song).then(() => console.log("Song: '" + song.title + "' was added to database."));
+			let songBookName = "Imported on " + Date();
+			this.$store.dispatch("addSongBook", songBookName).then(() => {
+				this.formatedSongs.forEach((song) => {
+					this.$store.dispatch("addSong", song).then((id) => {
+						this.$store.dispatch("addSongToSongbook", { id: id, songbook: songBookName });
+						console.log("Song: '" + song.title + "' was added to database.");
+					});
+				});
 			});
 		},
 
@@ -79,10 +85,12 @@ export default {
 				try {
 					let title = this.findTitle(rawSong);
 					let author = this.fixAuthorName(this.findAuthor(rawSong));
+					let test = this.findText(rawSong);
+					let sections = this.parseSongText(test);
 					let formatedSong = {
 						title,
 						author,
-						sections: this.parseSongText(this.findText(rawSong)),
+						sections,
 						input: {
 							title,
 							author,
