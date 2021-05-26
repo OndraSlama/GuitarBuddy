@@ -18,9 +18,14 @@ const routes = [
 		component: () => import("../views/About.vue"),
 	},
 	{
-		path: "/song-book",
-		name: "SongBook",
-		component: () => import("../views/SongBook.vue"),
+		path: "/play-session/:id",
+		name: "PlaySession",
+		component: () => import("../views/PlaySession.vue")
+	},
+	{
+		path: "/play-session",
+		name: "PlaySession",
+		component: () => import("../views/PlaySession.vue"),
 		beforeEnter: AuthGuard,
 	},
 	{

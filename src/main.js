@@ -11,6 +11,7 @@ import SelectSongbookDialog from "./components/Dialogs/SelectSongbookDialog";
 import fullscreen from "vue-fullscreen";
 import moment from "moment";
 import vueInsomnia from "vue-insomnia";
+import UUID from "vue-uuid";
 import viewportSize from "./mixins/viewportSize";
 
 Vue.prototype.$moment = moment;
@@ -18,6 +19,7 @@ Vue.config.productionTip = false;
 
 Vue.use(vueInsomnia);
 Vue.use(fullscreen);
+Vue.use(UUID);
 Vue.mixin(viewportSize);
 Vue.component("general-dialog", GeneralDialog);
 Vue.component("delete-dialog", DeleteDialog);

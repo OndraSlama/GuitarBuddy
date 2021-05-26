@@ -130,8 +130,8 @@
 
 			<!----------------------------------- List of songs ----------------------------------->
 			<div style="margin-top:160px; overflow:scroll; ">
+				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-list expand>
-					<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 					<v-scroll-y-transition group hide-on-leave>
 						<v-list-group v-for="group in groupedSongs(filters)" :key="group.group">
 							<template v-slot:activator>

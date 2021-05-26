@@ -18,17 +18,13 @@ export default {
 
 			// Parse text
 
+			text = text.replace(/^[\s]*\[?(Intro|Chorus|Verse(?:\s+\d)?|Bridge|Ending)\]?[\s]*(?:\.|:|\))?[\s]/gim, "{$1}\n");
 			text = this.replaceAndFill(text, "^[\\s]*\\(?r(f|e|ef)?(\\.|:|\\))\\)?[\\s]*", "{Chorus}\n");
-			text = this.replaceAndFill(text, "^[\\s]*\\(?(\\d)(\\.|:|\\))?\\)?[\\s]*", "{Verse $1}\n");
-
-			text = text.replace(/^[\s]*(Intro|Chorus|Verse(?:\s+\d)?|Bridge|Ending)[\s]*(?:\.|:|\))?[\s]/gim, "{$1}\n");
+			text = this.replaceAndFill(text, "^[\\s]*\\(?(\\d)(\\.|:|\\)|\\s)\\)?[^xX][\\s]*", "{Verse $1}\n");
 			
 			text = text.replace(/\{soc\}/gi, "{Chorus}");
 			text = text.replace(/\{eoc\}/gi, "");
 			text = text.replace(/\n\n[\n]+/g, "\n\n");
-			// text = text.replace(/(^|\n)[\s]*\(?(\d)(\.|:|\))\)?[\s]*/gi, "\nVerse $2\n");
-			// text = text.replace(/(^|\n)[\s]*\(?bridge(\.|:|\))\)?[\s]*/gi, "\nBridge\n");
-			// text = text.replace(/(^|\n)[\s]*\(?ending(\.|:|\))\)?[\s]*/gi, "\nEnding\n");
 
 			let lineArray = [];
 			let bracketMatch;

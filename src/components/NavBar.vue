@@ -61,8 +61,8 @@ export default {
 			routes: [
 				{ name: "Browse songs", link: "/", icon: "mdi-magnify" },
 				{
-					name: "My Songs",
-					link: "/song-book",
+					name: "Play session",
+					link: "/play-session",
 					icon: "mdi-playlist-music-outline",
 				},
 				{

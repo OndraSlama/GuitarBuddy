@@ -2,6 +2,7 @@ import Vue from "vue";
 import Vuex from "vuex";
 import * as firebase from "firebase";
 import normalizeString from "../functions/normalizeText";
+// import { uuid } from 'vue-uuid';
 
 Vue.use(Vuex);
 
@@ -10,6 +11,7 @@ export default new Vuex.Store({
 		currentPage: "",
 		publicSongs: [],
 		userSongBooks: {},
+		playSession: undefined,
 		userPreferences: {},
 		defaultPreferences: {
 			notation: "German (A H C D E F G)",
@@ -17,8 +19,10 @@ export default new Vuex.Store({
 			multipleColumns: true,
 			showTabs: true,
 		},
+
 		fontSizePreferences: ["Small", "Medium", "Large"],
 		notations: ["Standard (A B C D E F G)", "German (A H C D E F G)"],
+
 		userSongs: [],
 		authors: [],
 		loadedSong: null,
@@ -38,8 +42,8 @@ export default new Vuex.Store({
 		getCurrentSong: (state) => (id) => state.userSongs.find((el) => el.id === id),
 
 		getFilteredUserSongs: (state, getters) => (filters) => {
-            if (!getters.getUserLogged || state.userSongs === undefined) return [];
-            return getters.getFilteredSongs(state.userSongs, filters);
+			if (!getters.getUserLogged || state.userSongs === undefined) return [];
+			return getters.getFilteredSongs(state.userSongs, filters);
 		},
 
 		getFilteredPublicSongs: (state, getters) => (filters) => {
@@ -51,6 +55,7 @@ export default new Vuex.Store({
 		getUserSongs: (state) => state.userSongs,
 		getUserSongBooks: (state) => state.userSongBooks,
 		getUserPreferences: (state) => state.userPreferences,
+		getPlaySession: (state) => state.playSession,
 		getDefaultPreferences: (state) => state.defaultPreferences,
 		getFontSizePreferences: (state) => state.fontSizePreferences,
 		getNotations: (state) => state.notations,
@@ -71,15 +76,15 @@ export default new Vuex.Store({
 				return titleMatch || authorMatch;
 			});
 
-            let groupsObject = {};
+			let groupsObject = {};
 
-            // Prepare groups if group by "songbooks" - because there can be empty songbooks
-            let playbooks = getters.getUserSongBooks;
-            if (filters.groupBy == 'songbook'){
-                for (const key in playbooks) {
-                    groupsObject[key] = []
-                }
-            }
+			// Prepare groups if group by "songbooks" - because there can be empty songbooks
+			let playbooks = getters.getUserSongBooks;
+			if (filters.groupBy == 'songbook'){
+				for (const key in playbooks) {
+					groupsObject[key] = []
+				}
+			}
 
 			filteredSongs.forEach((song) => {
 				let groups = [];
@@ -214,10 +219,13 @@ export default new Vuex.Store({
 			state.userSongs = userSongs;
 		},
 		setUserSongBooks(state, userSongBooks){
-            state.userSongBooks = {...userSongBooks}
+			state.userSongBooks = {...userSongBooks}
 		},
 		setUserPreferences(state, userPreferences){
-            state.userPreferences = {...userPreferences}
+			state.userPreferences = {...userPreferences}
+		},
+		setPlaySession(state, playSession){
+			state.playSession = playSession
 		},
 		setAuthors(state, authors){
 			state.authors = authors
@@ -274,7 +282,7 @@ export default new Vuex.Store({
 							id: key,
 							...obj[key],
 						});
-                    }
+					}
 					commit("setPublicSongs", publicSongs);
 					commit("setPublicSongListLoading", false);
 				});
@@ -295,10 +303,12 @@ export default new Vuex.Store({
 
 		loadUserDataOn({ getters, commit }) {
 			if (getters.getUserLogged) {
+				commit("setSongListLoading", true);
 				firebase
 					.database()
 					.ref("users/" + getters.getUser.uid)
 					.on("value", (data) => {
+						commit("setSongListLoading", false);
 						if (getters.getUserLogged) {
 							const obj = data.val();
 
@@ -309,18 +319,18 @@ export default new Vuex.Store({
 									id: key,
 									...obj["songs"][key],
 								});
-                            }                            
-                            commit("setUserSongs", userSongs);
+							}							
+							commit("setUserSongs", userSongs);
 							
 							// Parse user songbooks
-                            let songbooks = obj["playBooks"];
-                            for (const key in songbooks) {
-                                for (const songid in songbooks[key]) {
-                                    if (!songbooks[key][songid]){
-                                        delete songbooks[key][songid]
-                                    }
-                                }                                  
-                            }
+							let songbooks = obj["playBooks"];
+							for (const key in songbooks) {
+								for (const songid in songbooks[key]) {
+									if (!songbooks[key][songid]){
+										delete songbooks[key][songid]
+									}
+								}								  
+							}
 							commit("setUserSongBooks", {...songbooks});
 
 							// Parse user preferences
@@ -329,6 +339,9 @@ export default new Vuex.Store({
 							}else{
 								commit("setUserPreferences", getters.getDefaultPreferences);
 							}
+							
+							// Parse play session
+							commit("setPlaySession", {...obj["playSession"]});
 						}
 					});
 			}else{
@@ -365,6 +378,143 @@ export default new Vuex.Store({
 						reject();
 					});
 				
+			});
+		},
+
+		startPlaySession({ getters }) {
+			return new Promise((resolve, reject) => {
+				if (getters.getUserLogged) {
+					firebase
+						.database()
+						.ref("users/" + getters.getUser.uid + "/playSession")
+						.once("value")
+						.then((data) => {
+							let obj = data.val();
+							if (obj != null){
+								console.log("Session already started. ID: " + obj.id);
+								resolve(obj.id)
+								return
+							} 
+
+							firebase
+								.database()
+								.ref("playSessions/")
+								.push({
+									createdBy: getters.getUser.uid
+								})
+								.then((data) => {
+									let newSession = {	
+										id: data.key,	
+										createdBy: getters.getUser.uid,
+										createdAt: new Date().toISOString(),
+										updatedAt: new Date().toISOString(),
+										connected: 0,
+										currentSong: null,
+									};
+		
+									firebase
+										.database()
+										.ref("users/" + getters.getUser.uid + "/playSession")
+										.update(newSession)
+										.then(() => {							
+											resolve(newSession.id);
+										})
+										.catch((e) => {
+											console.log(e);
+											reject(e);
+										});
+								})
+							
+							
+							
+						});					
+				}
+			});
+		},
+
+		updatePlaySession({ getters }, payload) {
+			return new Promise((resolve, reject) => {
+				if (getters.getUserLogged) {				  
+		
+					firebase
+						.database()
+						.ref("users/" + getters.getUser.uid + "/playSession")
+						.update({...payload})
+						.then(() => {							
+							resolve(payload.id);
+						})
+						.catch((e) => {
+							console.log(e);
+							reject(e);
+						});
+										
+				}
+			});
+		},
+
+        playSessionOn({commit}, payload) {
+			return new Promise((resolve) => {
+                firebase
+                    .database()
+                    .ref("playSessions/" + payload)
+                    .once("value")
+                    .then((data) => {		
+                        let session = data.val();	
+                        firebase
+                            .database()
+                            .ref("users/" + session.createdBy + "/playSession")
+                            .on("value", (data) => { 
+                                commit("setPlaySession", {...data.val()})
+                             })
+                             resolve();
+                    })
+                    .catch((e) => {
+                        console.log(e);
+                    });
+			});
+		},
+
+        playSessionOff(_, payload) {
+			return new Promise((resolve) => {
+                firebase
+                    .database()
+                    .ref("playSessions/" + payload)
+                    .once("value")
+                    .then((data) => {		
+                        let session = data.val();	
+                        firebase
+                            .database()
+                            .ref("users/" + session.createdBy + "/playSession")
+                            .off("value")  
+                            .catch((e) => {console.log(e)});   
+
+                        resolve();
+                    })
+                    .catch((e) => {console.log(e)});   
+			});
+		},
+
+
+
+		
+		stopPlaySession({ getters }, payload) {
+			// commit("setSongListLoading", true);
+			// console.log(commit);
+			return new Promise((resolve) => {
+				if (getters.getUserLogged) {	 
+
+					firebase
+						.database()
+						.ref("playSessions/" + payload)
+						.remove()
+
+					firebase
+						.database()
+						.ref("users/" + getters.getUser.uid + "/playSession")
+						.remove()
+						.then(() => { resolve() })							 
+						
+				}
 			});
 		},
 
@@ -405,6 +555,7 @@ export default new Vuex.Store({
 
 		updateSong({ commit, dispatch, getters }, payload) {
 			return new Promise((resolve, reject) => {
+				commit("setSongListLoading", true);
 				if (getters.getUserLogged) {
 					dispatch("setAuthor", {name: payload.data.author});
 					firebase
@@ -436,34 +587,34 @@ export default new Vuex.Store({
 
 		deleteSong({ dispatch, getters }, payload) {
 			// commit("setSongListLoading", true);
-            // console.log(commit);
-            return new Promise((resolve, reject) => {
-                if (getters.getUserLogged) {
-                    firebase
-                        .database()
-                        .ref("users/" + getters.getUser.uid + "/songs/" + payload)
-                        .remove()
-                        .then(() => {
-                            firebase
-                                .database()
-                                .ref("publicSongs/" + payload)
-                                .once("value")
-                                .then((data) => {
-                                    let obj = data.val();
+			// console.log(commit);
+			return new Promise((resolve, reject) => {
+				if (getters.getUserLogged) {
+					firebase
+						.database()
+						.ref("users/" + getters.getUser.uid + "/songs/" + payload)
+						.remove()
+						.then(() => {
+							firebase
+								.database()
+								.ref("publicSongs/" + payload)
+								.once("value")
+								.then((data) => {
+									let obj = data.val();
 
-                                    if (obj !== null && obj.createdBy === getters.getUser.uid) {
-                                        dispatch("deletePublicSong", payload);
-                                    }
-                                });
-                            resolve();
-                        })
-                        .catch((e) => {
-                            console.log(e);
-                            reject()
-                            // commit("setSongListLoading", false);
-                        });
-                }
-            });
+									if (obj !== null && obj.createdBy === getters.getUser.uid) {
+										dispatch("deletePublicSong", payload);
+									}
+								});
+							resolve();
+						})
+						.catch((e) => {
+							console.log(e);
+							reject()
+							// commit("setSongListLoading", false);
+						});
+				}
+			});
 		},
 		
 		setPublicSong({ getters }, payload) {
@@ -525,30 +676,30 @@ export default new Vuex.Store({
 		},
 
 		setFavourite({ getters }, payload) {
-            if (getters.getUserLogged) {
-                firebase
-                    .database()
-                    .ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
-                    .update({ favourite: payload.value });
-            }
-        },
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
+					.update({ favourite: payload.value });
+			}
+		},
 
-        addSongBook( {getters }, payload){
-            // console.log(getters.getUserSongs);
-            if (getters.getUserLogged && getters.getUserSongs.length > 0) {                     
-                firebase
-                    .database()
-                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
-                    .update({ [getters.getUserSongs[0].id]: false })
-                    .catch((e) => {
-                        console.log(e);
-                    });		                
-            }
+		addSongBook( {getters }, payload){
+			// console.log(getters.getUserSongs);
+			if (getters.getUserLogged && getters.getUserSongs.length > 0) {					 
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
+					.update({ [getters.getUserSongs[0].id]: false })
+					.catch((e) => {
+						console.log(e);
+					});						
+			}
 		},
 
 		changeSongBookName( {getters }, payload){
-            // console.log(getters.getUserSongs);
-            if (getters.getUserLogged) {
+			// console.log(getters.getUserSongs);
+			if (getters.getUserLogged) {
 				let songBooks = firebase.database().ref("users/" + getters.getUser.uid + "/playBooks/");
 
 				songBooks.child(payload.old).once('value').then((snap) => {
@@ -560,44 +711,44 @@ export default new Vuex.Store({
 				}).catch((e) => {
 					console.log(e);
 				}); 
-            }
+			}
 		},
 		
 		deleteSongBook( {getters }, payload){
-            // console.log(getters.getUserSongs);
-            if (getters.getUserLogged) {                     
-                firebase
-                    .database()
-                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
-                    .remove()
-                    .catch((e) => {
-                        console.log(e);
-                    });		                
-            }
-        },
-        
+			// console.log(getters.getUserSongs);
+			if (getters.getUserLogged) {					 
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
+					.remove()
+					.catch((e) => {
+						console.log(e);
+					});						
+			}
+		},
+		
 		addSongToSongbook({ getters }, payload) {
-            if (getters.getUserLogged) {
-                firebase
-                    .database()
-                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
-                    .update({ [payload.id]: true })
-                    .catch((e) => {
-                        console.log(e);
-                    });		                
-            }
-        },
-        
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
+					.update({ [payload.id]: true })
+					.catch((e) => {
+						console.log(e);
+					});						
+			}
+		},
+		
 		removeSongFromSongbook({ getters }, payload) {
-            if (getters.getUserLogged) {
-                firebase
-                    .database()
-                    .ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
-                    .update({ [payload.id]: false })
-                    .catch((e) => {
-                        console.log(e);
-                    });		                
-            }
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
+					.update({ [payload.id]: false })
+					.catch((e) => {
+						console.log(e);
+					});						
+			}
 		},
 
 

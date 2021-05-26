@@ -58,24 +58,7 @@
 					</template>
 					<span>Chords settings</span>
 				</v-tooltip>
-				<!-- <v-btn-toggle v-model="tempSource.chordsAboveText" rounded mandatory class="ml-n5">
-					<v-tooltip top>
-						<template v-slot:activator="{ on, attrs }">
-							<v-btn icon v-bind="attrs" v-on="on">
-								<v-icon>mdi-code-brackets</v-icon>
-							</v-btn>
-						</template>
-						<span>Chords in text surrounded by [] brackets</span>
-					</v-tooltip>
-					<v-tooltip top>
-						<template v-slot:activator="{ on, attrs }">
-							<v-btn icon v-bind="attrs" v-on="on">
-								<v-icon>mdi-format-text-variant</v-icon>
-							</v-btn>
-						</template>
-						<span>Chords above text aligned with spaces</span>
-					</v-tooltip>
-				</v-btn-toggle> -->
+
 				<v-tooltip top>
 					<template v-slot:activator="{ on: onMenu }">
 						<v-menu rounded="large" transition="slide-y-transition" bottom>

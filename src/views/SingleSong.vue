@@ -1,8 +1,11 @@
 <template>
 	<div>
-		<v-skeleton-loader v-show="songListLoading || song == null" type="article"></v-skeleton-loader>
-		<v-scroll-x-transition hide-on-leave>
-			<song-sheet v-if="!songListLoading && !transitioning && song != null" :song="song"></song-sheet>
+		<v-skeleton-loader v-show="(songListLoading || !songValid) && !songDoesNotExist" type="article"></v-skeleton-loader>
+		<v-scroll-x-transition>
+			<song-sheet v-if="!songListLoading && !transitioning && songValid" :song="song"></song-sheet>
+			<div v-if="!songValid && songDoesNotExist" class="d-flex justify-center ">
+				<div class="display-1 mt-5 ">Song does not exist.</div>
+			</div>
 		</v-scroll-x-transition>
 	</div>
 </template>
@@ -14,7 +17,10 @@ import { mapGetters } from "vuex";
 
 export default {
 	data() {
-		return { transitioning: false };
+		return {
+			transitioning: false,
+			songDoesNotExist: false,
+		};
 	},
 
 	methods: {
@@ -35,12 +41,11 @@ export default {
 		},
 
 		songValid() {
-			return this.song != undefined || this.song != null;
+			return !(this.song === null || this.song === undefined);
 		},
 
 		...mapGetters({
 			songListLoading: "getSongListLoading",
-			loadedSong: "getLoadedSong",
 		}),
 	},
 	components: {
@@ -53,20 +58,27 @@ export default {
 
 	created() {
 		this.updateNavigationTitle();
+		setTimeout(() => {
+			this.songDoesNotExist = true;
+		}, 400);
 	},
 
 	watch: {
-		"$route.params.id": function() {
+		id: function() {
 			this.updateNavigationTitle();
 			this.transitioning = true;
+			this.songDoesNotExist = false;
 			setTimeout(() => {
 				this.transitioning = false;
-			}, 80);
+			}, 150);
+			setTimeout(() => {
+				this.songDoesNotExist = true;
+			}, 1200);
 		},
 		song: function() {
 			this.updateNavigationTitle();
-			if (this.song === null || this.song === undefined) {
-				this.$router.push("/song-book").catch(() => {});
+			if (!this.songValid) {
+				this.$router.push("/song").catch(() => {});
 			}
 		},
 	},
