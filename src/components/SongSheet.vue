@@ -293,7 +293,7 @@ export default {
 			const width = this.$refs.songSheet.clientWidth;
 			const overflowDiff = width - this.$refs.songSheet.scrollWidth;
 			if (overflowDiff < 0 && this.dynamicSectionFontSize > this.minFontSize) {
-				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.05, 0.8);
+				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.05, 1);
 				this.updatingFontSize = true;
 			}
 
@@ -396,7 +396,7 @@ export default {
 		},
 
 		minFontSize() {
-			if (this.currentPreferences.multipleColumns) return 5;
+			if (this.currentPreferences.multipleColumns) return 2;
 
 			switch (this.fontSizePreferences.indexOf(this.currentPreferences.fontSize)) {
 				case 0:
