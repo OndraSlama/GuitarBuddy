@@ -1,11 +1,21 @@
 <template>
-	<div>
-		<div v-if="isOwner" class="d-flex justify-space-around align-center mb-4">
-			<div class=" display-1">Your session</div>
+	<v-container class="align-start" style="min-width:100%">
+		<div v-if="isOwner" class="d-flex wrap justify-space-between align-center mb-4">
+			<div class="title ">Session running: {{ elapsedTime }}</div>
 			<v-btn color="error" @click="stopSession">Stop session</v-btn>
 		</div>
-		<song-sheet v-if="!songListLoading && songValid" :song="song"></song-sheet>
-	</div>
+		<v-scroll-x-transition>
+			<song-sheet v-if="!songListLoading && songValid && !transitioning" :song="song"></song-sheet>
+			<div v-else-if="!transitioning" class="align-self-center mt-5 pa-3 elevation-2">
+				<div class="display-1 text--secondary text-center">
+					Select a song from your playlist at the left side panel or go to Browse Songs tab and choose there.
+				</div>
+				<div class="title mt-5 text--secondary text-center">
+					Selected song will be displayed to everyone that has this page opened.
+				</div>
+			</div>
+		</v-scroll-x-transition>
+	</v-container>
 </template>
 
 <script>
@@ -15,7 +25,11 @@ import SongSheet from "../components/SongSheet";
 export default {
 	props: ["selectedSong"],
 	data() {
-		return {};
+		return {
+			transitioning: false,
+			elapsedTime: "0",
+			intervalId: null,
+		};
 	},
 
 	methods: {
@@ -53,10 +67,21 @@ export default {
 
 	mounted() {
 		this.$store.dispatch("playSessionOn", this.id);
+		this.intervalId = setInterval(() => {
+			var before = this.$moment(this.playSession.createdAt);
+			var now = this.$moment();
+
+			this.elapsedTime = this.$moment.utc(now.diff(before)).format("HH:mm:ss");
+
+			while (this.elapsedTime.startsWith("00:")) {
+				this.elapsedTime = this.elapsedTime.replace("00:", "");
+			}
+		});
 	},
 
 	destroyed() {
 		this.$store.dispatch("playSessionOff", this.id);
+		clearInterval(this.timerId);
 	},
 
 	components: {
@@ -70,6 +95,13 @@ export default {
 					currentSong: this.selectedSong,
 				});
 			}
+		},
+
+		song: function() {
+			this.transitioning = true;
+			setTimeout(() => {
+				this.transitioning = false;
+			}, 150);
 		},
 	},
 };

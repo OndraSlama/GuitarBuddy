@@ -1,15 +1,15 @@
 <template>
-	<v-container fill-height class="justify-center" style="min-width:100%">
+	<v-container fill-height class="justify-center pa-0" style="min-width:100%">
 		<!-- <v-skeleton-loader v-show="transitioning" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader> -->
 		<v-scroll-y-transition>
-			<div v-show="!transitioning" class="ml-n4 mt-n5" style="min-width:100%">
+			<v-container fill-height v-show="!transitioning" class="ml-n1 pa-0 align-start justify-center" style="min-width:100%">
 				<!-- <song-sheet v-if="!songListLoading && !transitioning && song != null" :song="song"></song-sheet> -->
-				<start-session-page v-if="noSession" v-on:sessionStart="transitioning = true"></start-session-page>
+				<start-session-page v-if="noSession" class="align-self-center" v-on:sessionStart="transitioning = true"></start-session-page>
 				<session-page v-if="!noSession" v-on:sessionStop="transitioning = true" :selectedSong="selectedSong"></session-page>
 
 				<!-- <div>{{ playSession }}</div>
 				<div>{{ noSession }}</div> -->
-			</div>
+			</v-container>
 		</v-scroll-y-transition>
 	</v-container>
 </template>
