@@ -21,14 +21,18 @@
 				</v-toolbar-items>
 				<v-spacer></v-spacer>
 				<v-toolbar-items>
+					<v-btn v-show="type !== 'session-view'" :disabled="playSessionActive" text :icon="collapse" @click.stop="sendToSession">
+						<v-icon :left="!collapse">mdi-share-outline</v-icon>
+						<span v-show="!collapse">to session</span>
+					</v-btn>
 					<v-btn v-show="editable" text :icon="collapse" @click.stop="askIfEditSong(song)">
-						<v-icon left>mdi-pencil-outline</v-icon>
+						<v-icon :left="!collapse">mdi-pencil-outline</v-icon>
 						<span v-show="!collapse">Edit</span>
 					</v-btn>
 					<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 
 					<v-btn v-show="deletable" text :icon="collapse" @click.stop="askIfDeleteSong(song)">
-						<v-icon left>mdi-delete-outline</v-icon>
+						<v-icon :left="!collapse">mdi-delete-outline</v-icon>
 						<span v-show="!collapse">Delete</span>
 					</v-btn>
 					<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
@@ -124,6 +128,7 @@
 				</v-toolbar-items>
 			</v-toolbar>
 			<v-divider></v-divider>
+			<!----------------------------------- Song ----------------------------------->
 			<div class="px-7 py-3">
 				<v-row v-if="songValid" class="">
 					<v-col class>
@@ -131,6 +136,9 @@
 							{{ song.title ? song.title : "Song preview" }}
 						</div>
 						<div class="text-h5 text--secondary">{{ song.author }}</div>
+						<div class="d-flex">
+							<v-chip class="mr-3 mt-2" v-for="label in song.labels" label outlined :key="label"> {{ label }} </v-chip>
+						</div>
 					</v-col>
 
 					<v-col class="text-start ml-n5" style="max-width: 290px; min-width: 290px" align-self="start">
@@ -159,8 +167,8 @@
 				</v-row>
 				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
-					<div v-if="currentPreferences.showTabs" class="d-flex">
-						<div v-for="chord in distinctChords" :key="chord.symbol" style="max-width: 100px" class="ml-3">
+					<div v-if="currentPreferences.showTabs" class="d-flex flex-wrap">
+						<div v-for="chord in distinctChords" :key="chord.symbol" style="max-width: 100px" class="mr-3">
 							<div :id="chord.symbol"></div>
 						</div>
 					</div>
@@ -205,6 +213,14 @@ export default {
 	},
 
 	methods: {
+		sendToSession() {
+			this.$store.dispatch("updatePlaySession", {
+				...this.playSession,
+				currentSong: this.song,
+			});
+			this.$router.push("/play-session");
+			this.$emit("cancel");
+		},
 		onColumnChange(multipleColumns) {
 			//   this.minFontSize = 9;
 			this.currentPreferences.multipleColumns = multipleColumns;
@@ -279,8 +295,8 @@ export default {
 				this.distinctChords.forEach((chord) => {
 					try {
 						jtab.render(document.getElementById(chord.symbol), chord.symbol);
-					} catch (e) {
-						console.log(e);
+					} catch {
+						console.log("");
 					}
 				});
 			}
@@ -357,12 +373,16 @@ export default {
 	},
 
 	computed: {
+		playSessionActive() {
+			return !this.playSession?.id;
+		},
+
 		editable() {
-			return this.song !== undefined && this.song.id !== undefined && this.type !== "editor-view";
+			return this.song !== undefined && this.song.id !== undefined && this.type !== "editor-view" && this.type !== "session-view";
 		},
 
 		deletable() {
-			return this.editable && this.userIsCreator;
+			return this.editable && this.userIsCreator && this.type !== "session-view";
 		},
 
 		collapse() {
@@ -430,6 +450,7 @@ export default {
 			userLogged: "getUserLogged",
 			preferences: "getUserPreferences",
 			notations: "getNotations",
+			playSession: "getPlaySession",
 			fontSizePreferences: "getFontSizePreferences",
 		}),
 	},

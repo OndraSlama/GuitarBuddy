@@ -20,7 +20,7 @@ export default {
 
 			text = text.replace(/^[\s]*\[?(Intro|Chorus|Verse(?:\s+\d)?|Bridge|Ending)\]?[\s]*(?:\.|:|\))?[\s]/gim, "{$1}\n");
 			text = this.replaceAndFill(text, "^[\\s]*\\(?r(f|e|ef)?(\\.|:|\\))\\)?[\\s]*", "{Chorus}\n");
-			text = this.replaceAndFill(text, "^[\\s]*\\(?(\\d)(\\.|:|\\)|\\s)\\)?[^xX][\\s]*", "{Verse $1}\n");
+			text = this.replaceAndFill(text, "^[\\s]*\\(?(\\d)(\\.|:|\\))\\)?[\\s]*", "{Verse $1}\n");
 			
 			text = text.replace(/\{soc\}/gi, "{Chorus}");
 			text = text.replace(/\{eoc\}/gi, "");
@@ -34,7 +34,7 @@ export default {
 			lines.forEach((line) => {
 				let lineType = "lyrics";
 				let chords = [];
-				line = line.trim("\n").trim("\r");
+				line = line.replace(/[\n\r]/gm, "");
 				if (/\s*\{.*?\}\s*/i.test(line)) {
 					match = /\s*\{(.*?)\}\s*/i.exec(line);
 					lineType = "delimiter";

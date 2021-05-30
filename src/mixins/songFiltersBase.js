@@ -10,7 +10,9 @@ export default {
 				createdDateOrder: false,
 				forksOrder: false,
 				orderBy: "titleName",
-				lastRow: 15,
+				orderGroupBy: "name",
+				groupNameOrder: false,
+				lastRow: null,
 			},
 
 		};
@@ -18,27 +20,31 @@ export default {
 
 	methods: {
 		onTitleName() {
-			this.filters.titleNameOrder = !this.filters.titleNameOrder;
+			this.filters.titleNameOrder = this.filters.orderBy == 'titleName' ? !this.filters.titleNameOrder : false;
 			this.filters.orderBy = 'titleName';
 		},
 		onAuthorName() {
-			this.filters.authorNameOrder = !this.filters.authorNameOrder;
+			this.filters.authorNameOrder = this.filters.orderBy == 'authorName' ? !this.filters.authorNameOrder : false;
 			this.filters.orderBy = 'authorName';
 		},
 
 		onDateModified() {
-			this.filters.modifiedDateOrder = !this.filters.modifiedDateOrder;
+			this.filters.modifiedDateOrder =  this.filters.orderBy == 'dateModified' ? !this.filters.modifiedDateOrder : false;
 			this.filters.orderBy = 'dateModified';
 		},
 
 		onDateCreated() {
-			this.filters.createdDateOrder = !this.filters.createdDateOrder;
+			this.filters.createdDateOrder = this.filters.orderBy == 'dateCreated' ? !this.filters.createdDateOrder : false;
 			this.filters.orderBy = 'dateCreated';
 		},
 
 		onForks() {
-			this.filters.forksOrder = !this.filters.forksOrder;
+			this.filters.forksOrder = this.filters.orderBy == 'forks' ? !this.filters.forksOrder : false;
 			this.filters.orderBy = 'forks';
+		},
+		onGroupName() {
+			this.filters.groupNameOrder = this.filters.orderGroupBy == 'name' ? !this.filters.groupNameOrder : false;
+			this.filters.orderGroupBy = 'name';
 		},
 	}
 

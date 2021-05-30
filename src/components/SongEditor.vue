@@ -23,6 +23,7 @@
 			</v-toolbar>
 			<v-text-field class="mb-3" v-model="tempSource.title" label="Song Title" :rules="rules" hide-details="auto" outlined></v-text-field>
 			<v-combobox outlined label="Author" v-model="tempSource.author" :items="authors"></v-combobox>
+			<v-combobox outlined label="Song Labels" class="mt-n4" v-model="tempSource.labels" :items="labels" hide-selected multiple small-chips> </v-combobox>
 			<!-- <v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field> -->
 
 			<v-textarea outlined rows="20" :class="['text-area', 'pt-3', 'mt-n3', viewportSize.smAndDown ? '' : 'limit-height']" v-model="tempSource.text" label="Song text with chords" :rules="rules" auto-grow></v-textarea>
@@ -133,6 +134,7 @@ export default {
 					title: "",
 					author: "",
 					text: "",
+					labels: [],
 					chordsAboveText: true,
 					standardNotation: true,
 					trimLines: true,
@@ -154,6 +156,7 @@ export default {
 					title: "",
 					author: "",
 					text: "",
+					labels: [],
 					chordsAboveText: true,
 					standardNotation: true,
 					trimLines: false,
@@ -171,7 +174,7 @@ export default {
 		},
 
 		variableToFixed() {
-			let lines = this.tempSource.text.split("\n");
+			let lines = this.tempSource.text.split(/[\n\r]/);
 			lines.forEach((line, index) => {
 				if (this.isChordsLine(line) && index + 1 < lines.length) {
 					let lineParts = line.split(/(\s+)/).filter((e) => e.length > 0);
@@ -219,6 +222,20 @@ export default {
 		relativeTextWidth(str) {
 			return measureText(normalizeText(str)) / measureText(" ");
 		},
+
+		fixLabels(labels) {
+			if (!labels) labels = [];
+			let newLabels = labels.map((e) => {
+				return e
+					.toLowerCase()
+					.trim()
+					.split(" ")
+					.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+					.join("");
+			});
+
+			return [...new Set(newLabels)];
+		},
 	},
 
 	computed: {
@@ -230,6 +247,7 @@ export default {
 				sections,
 				title: this.tempSource.title,
 				author: this.fixAuthorName(this.tempSource.author),
+				labels: this.fixLabels(this.tempSource.labels),
 			};
 		},
 
@@ -245,6 +263,7 @@ export default {
 			userLogged: "getUserLogged",
 			user: "getUser",
 			authors: "getAuthors",
+			labels: "getLabels",
 			showTooltips: "getShowTooltips",
 		}),
 	},
@@ -253,6 +272,7 @@ export default {
 		this.tempSource = { ...this.songSource };
 		this.$emit("input", this.formatedSong);
 		this.$store.dispatch("loadAuthors");
+		this.$store.dispatch("loadLabels");
 	},
 
 	watch: {
@@ -276,6 +296,27 @@ export default {
 		trimLines: function() {
 			this.$emit("input", this.formatedSong);
 		},
+
+		"tempSource.labels": function(newLabels, prevLabels) {
+			if (!prevLabels || !newLabels) {
+				if (newLabels) {
+					this.tempSource.labels = this.fixLabels(this.tempSource.labels);
+					return;
+				} else {
+					return;
+				}
+			}
+			if (
+				!(
+					newLabels.length === prevLabels.length &&
+					newLabels.every(function(value, index) {
+						return value === prevLabels[index];
+					})
+				)
+			) {
+				this.tempSource.labels = this.fixLabels(this.tempSource.labels);
+			}
+		},
 	},
 
 	components: {
@@ -294,6 +335,6 @@ export default {
 	font-size: 12px;
 }
 .limit-height {
-	max-height: clamp(300px, 62vh, 100vh);
+	max-height: clamp(300px, 55vh, 100vh);
 }
 </style>

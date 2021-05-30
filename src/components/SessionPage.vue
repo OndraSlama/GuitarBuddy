@@ -1,12 +1,15 @@
 <template>
-	<v-container class="align-start" style="min-width:100%">
-		<div v-if="isOwner" class="d-flex wrap justify-space-between align-center mb-4">
-			<div class="title ">Session running: {{ elapsedTime }}</div>
-			<v-btn color="error" @click="stopSession">Stop session</v-btn>
+	<v-container class="align-start " style="min-width:100%">
+		<div v-if="isOwner" class="d-flex flex-wrap justify-space-between align-center mb-4">
+			<v-btn color="error" class="my-2 mr-2" @click="stopSession">Stop session</v-btn>
+			<div class=" text--secondary subheader elevation-1 px-3 py-1" style="min-width: 190px">
+				Session running: {{ elapsedTime }} <br />
+				Connected: {{ playSession.connected }}
+			</div>
 		</div>
 		<v-scroll-x-transition>
-			<song-sheet v-if="!songListLoading && songValid && !transitioning" :song="song"></song-sheet>
-			<div v-else-if="!transitioning" class="align-self-center mt-5 pa-3 elevation-2">
+			<song-sheet v-if="!songListLoading && songValid && !transitioning" :song="song" type="session-view"></song-sheet>
+			<div v-else-if="!transitioning" class="align-self-center mt-10 pa-3  mx-auto" style="max-width:800px">
 				<div class="display-1 text--secondary text-center">
 					Select a song from your playlist at the left side panel or go to Browse Songs tab and choose there.
 				</div>
@@ -23,7 +26,6 @@ import { mapGetters } from "vuex";
 
 import SongSheet from "../components/SongSheet";
 export default {
-	props: ["selectedSong"],
 	data() {
 		return {
 			transitioning: false,
@@ -57,7 +59,7 @@ export default {
 		},
 
 		song() {
-			return this.playSession.currentSong;
+			return this.playSession?.currentSong;
 		},
 
 		songValid() {
@@ -68,19 +70,23 @@ export default {
 	mounted() {
 		this.$store.dispatch("playSessionOn", this.id);
 		this.intervalId = setInterval(() => {
-			var before = this.$moment(this.playSession.createdAt);
-			var now = this.$moment();
+			try {
+				var before = this.$moment(this.playSession.createdAt);
+				var now = this.$moment();
 
-			this.elapsedTime = this.$moment.utc(now.diff(before)).format("HH:mm:ss");
+				this.elapsedTime = this.$moment.utc(now.diff(before)).format("HH:mm:ss");
 
-			while (this.elapsedTime.startsWith("00:")) {
-				this.elapsedTime = this.elapsedTime.replace("00:", "");
+				while (this.elapsedTime.startsWith("00:")) {
+					this.elapsedTime = this.elapsedTime.replace("00:", "");
+				}
+			} catch (_) {
+				_;
 			}
-		});
+		}, 1000);
 	},
 
-	destroyed() {
-		this.$store.dispatch("playSessionOff", this.id);
+	beforeDestroy() {
+		this.$store.dispatch("playSessionOff", this.playSession.id);
 		clearInterval(this.timerId);
 	},
 
@@ -88,16 +94,8 @@ export default {
 		"song-sheet": SongSheet,
 	},
 	watch: {
-		selectedSong: function() {
-			if (this.playSession && this.isOwner) {
-				this.$store.dispatch("updatePlaySession", {
-					...this.playSession,
-					currentSong: this.selectedSong,
-				});
-			}
-		},
-
-		song: function() {
+		song: function(newSong, oldSong) {
+			if (newSong?.title === oldSong?.title) return;
 			this.transitioning = true;
 			setTimeout(() => {
 				this.transitioning = false;

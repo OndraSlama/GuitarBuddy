@@ -24,7 +24,7 @@ const routes = [
 	},
 	{
 		path: "/play-session",
-		name: "PlaySession",
+		name: "PlaySessionId",
 		component: () => import("../views/PlaySession.vue"),
 		beforeEnter: AuthGuard,
 	},

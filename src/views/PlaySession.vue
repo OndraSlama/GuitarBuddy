@@ -5,7 +5,7 @@
 			<v-container fill-height v-show="!transitioning" class="ml-n1 pa-0 align-start justify-center" style="min-width:100%">
 				<!-- <song-sheet v-if="!songListLoading && !transitioning && song != null" :song="song"></song-sheet> -->
 				<start-session-page v-if="noSession" class="align-self-center" v-on:sessionStart="transitioning = true"></start-session-page>
-				<session-page v-if="!noSession" v-on:sessionStop="transitioning = true" :selectedSong="selectedSong"></session-page>
+				<session-page v-if="!noSession" v-on:sessionStop="transitioning = true"></session-page>
 
 				<!-- <div>{{ playSession }}</div>
 				<div>{{ noSession }}</div> -->
@@ -22,7 +22,6 @@ export default {
 	data() {
 		return {
 			transitioning: false,
-			selectedSong: null,
 		};
 	},
 
@@ -34,6 +33,10 @@ export default {
 
 		id() {
 			return this.$route.params.id;
+		},
+
+		isOwner() {
+			return this.playSession?.createdBy === this.user?.uid && this.user;
 		},
 
 		noSession() {
@@ -49,14 +52,22 @@ export default {
 
 	mounted() {
 		if (this.playSession?.id) {
-			this.$router.push("/play-session/" + this.playSession.id);
+			try {
+				this.$router.push("/play-session/" + this.playSession.id)?.catch(() => {});
+			} catch (_) {
+				_;
+			}
 		}
 	},
 
 	watch: {
 		playSession: function() {
 			if (this.playSession?.id) {
-				this.$router.push("/play-session/" + this.playSession.id);
+				try {
+					this.$router.push("/play-session/" + this.playSession.id)?.catch(() => {});
+				} catch (_) {
+					_;
+				}
 			}
 		},
 		id: function() {
@@ -66,7 +77,12 @@ export default {
 
 	beforeRouteLeave(to, _, next) {
 		if (to.name == "SongSheet" && to.params?.id && !this.noSession) {
-			this.selectedSong = this.$store.getters.getCurrentSong(to.params.id);
+			if (this.playSession && this.isOwner) {
+				this.$store.dispatch("updatePlaySession", {
+					...this.playSession,
+					currentSong: this.$store.getters.getCurrentSong(to.params.id),
+				});
+			}
 		} else {
 			next();
 		}

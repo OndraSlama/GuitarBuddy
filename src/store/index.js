@@ -25,6 +25,7 @@ export default new Vuex.Store({
 
 		userSongs: [],
 		authors: [],
+		labels: [],
 		loadedSong: null,
 		user: null,
 		songListOpened: false,
@@ -60,6 +61,7 @@ export default new Vuex.Store({
 		getFontSizePreferences: (state) => state.fontSizePreferences,
 		getNotations: (state) => state.notations,
 		getAuthors: (state) => state.authors,
+		getLabels: (state) => state.labels,
 		getPublicSongs: (state) => state.publicSongs,
 		getUserLogged: (state) => state.user !== null && state.user !== undefined,
 		getSongListLoading: (state) => state.songListLoading,
@@ -99,6 +101,14 @@ export default new Vuex.Store({
 					}
 				}else if (filters.groupBy == 'author') {				
 					groups = [song.author];		
+				}else if (filters.groupBy == 'label') {
+					if(!song.labels){
+						groups = ["Unlabeled"]
+					}else{
+						groups = [...song.labels];		
+
+					}
+					
 				} else {					
 					if (song.favourite) {
 						groups = ["Favourite", "Collection"];
@@ -128,7 +138,7 @@ export default new Vuex.Store({
 					const authorNameOrder = filters.authorNameOrder ? normalizeString(a.author) < normalizeString(b.author) : normalizeString(a.author) > normalizeString(b.author);
 					const dateModifiedOrder = filters.modifiedDateOrder ? normalizeString(a.modifiedAt) < normalizeString(b.modifiedAt) : normalizeString(a.modifiedAt) > normalizeString(b.modifiedAt);
 					const dateCreatedOrder = filters.createdDateOrder ? normalizeString(a.createdAt) < normalizeString(b.createdAt) : normalizeString(a.createdAt) > normalizeString(b.createdAt);
-					const forksOrder = filters.forksOrder ? (a.forks ?? 0) < (b.forks ?? 0) : (a.forks ?? 0) > (b.forks ?? 0);
+					const forksOrder = filters.forksOrder ? (a.forks ?? 0) > (b.forks ?? 0) : (a.forks ?? 0) < (b.forks ?? 0);
 					if (filters.orderBy == "authorName") {
 						return authorNameOrder ? 1 : -1;
 					}
@@ -145,14 +155,16 @@ export default new Vuex.Store({
 					return titleOrder ? 1 : -1;
 				});
 			}
-
+	
 			groupsArray = groupsArray.sort((a, b) => {
 				if (a.group === "Favourite") return -1;
 				if (b.group === "Favourite") return 1;
 
-				const authorNameOrder = filters.authorNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
-				return authorNameOrder ? 1 : -1;
+				// const authorNameOrder = filters.authorNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
+				const groupNameOrder = filters.groupNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
+				return groupNameOrder ? 1 : -1;
 			});		
+
 			if (groupsArray.length == 1)
 				groupsArray[0].songs = groupsArray[0].songs.slice(filters.firstRow ?? 0, filters.lastRow ?? groupsArray[0].songs.length)
 			return groupsArray.slice(filters.firstRow ?? 0, filters.lastRow ?? groupsArray.length)			
@@ -230,6 +242,9 @@ export default new Vuex.Store({
 		setAuthors(state, authors){
 			state.authors = authors
 		},
+		setLabels(state, labels){
+			state.labels = labels
+		},
 		setDialogOpened(state, value) {
 			state.deleteDialogOpened = value;
 		},
@@ -262,6 +277,23 @@ export default new Vuex.Store({
 						authors.push(key);
 					}					
 					commit("setAuthors", authors);
+				})
+				.catch((e) => {
+					console.log(e);
+				});
+		},
+
+		loadLabels({commit}){
+			firebase
+				.database()
+				.ref("labels")
+				.once("value")
+				.then((data) => {
+					let labels = [];
+					for (var key of Object.keys(data.val())){
+						labels.push(key);
+					}					
+					commit("setLabels", labels);
 				})
 				.catch((e) => {
 					console.log(e);
@@ -459,7 +491,18 @@ export default new Vuex.Store({
                     .ref("playSessions/" + payload)
                     .once("value")
                     .then((data) => {		
-                        let session = data.val();	
+						let session = data.val();	
+						firebase
+							.database()
+							.ref("users/" + session.createdBy + "/playSession")
+							.once("value")
+							.then((data) => { 
+								let obj = data.val();
+								firebase
+									.database()
+									.ref("users/" + session.createdBy + "/playSession")
+									.update({connected: obj.connected + 1})
+								})
                         firebase
                             .database()
                             .ref("users/" + session.createdBy + "/playSession")
@@ -476,12 +519,25 @@ export default new Vuex.Store({
 
         playSessionOff(_, payload) {
 			return new Promise((resolve) => {
-                firebase
-                    .database()
-                    .ref("playSessions/" + payload)
-                    .once("value")
-                    .then((data) => {		
-                        let session = data.val();	
+				firebase
+				.database()
+				.ref("playSessions/" + payload)
+				.once("value")
+				.then((data) => {		
+						
+						let session = data.val();	
+						firebase
+							.database()
+							.ref("users/" + session.createdBy + "/playSession")
+							.once("value")
+							.then((data) => { 
+								
+								let obj = data.val();
+								firebase
+									.database()
+									.ref("users/" + session.createdBy + "/playSession")
+									.update({connected: obj.connected - 1})
+								})
                         firebase
                             .database()
                             .ref("users/" + session.createdBy + "/playSession")
@@ -492,7 +548,9 @@ export default new Vuex.Store({
                     })
                     .catch((e) => {console.log(e)});   
 			});
-		},
+		},	
+
+
 
 
 
@@ -522,6 +580,7 @@ export default new Vuex.Store({
 			return new Promise((resolve, reject) => {
 				if (getters.getUserLogged) {
 					dispatch("setAuthor", {name: payload.author});
+					dispatch("setLabels", payload.labels);
 					let newSong = {
 						author: payload.author,
 						title: payload.title,
@@ -558,6 +617,7 @@ export default new Vuex.Store({
 				commit("setSongListLoading", true);
 				if (getters.getUserLogged) {
 					dispatch("setAuthor", {name: payload.data.author});
+					dispatch("setLabels", payload.data.labels);
 					firebase
 						.database()
 						.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
@@ -625,6 +685,7 @@ export default new Vuex.Store({
 					.update({
 						title: payload.data.title,
 						author: payload.data.author,
+						labels: payload.data.labels,
 						createdBy: getters.getUser.uid,
 						modifiedAt: payload.data.modifiedAt,
 						createdAt: payload.data.createdAt,
@@ -757,6 +818,20 @@ export default new Vuex.Store({
 				.database()
 				.ref("authors")
 				.update({[payload.name]: true})
+				.catch((e) => {
+					console.log(e);
+				});
+		},
+
+		setLabels(_, payload){
+			let labels = {};
+			payload.forEach((label) => {
+				labels[label] = true;
+			})
+			firebase
+				.database()
+				.ref("labels")
+				.update(labels)
 				.catch((e) => {
 					console.log(e);
 				});

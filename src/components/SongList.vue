@@ -10,62 +10,115 @@
 			<v-container :style="{ position: 'fixed', 'z-index': '1', 'background-color': $vuetify.theme.dark ? '#363636' : 'white' }">
 				<v-row class="ma-3 mt-3">
 					<v-text-field v-model="filters.search" dense flat hide-details prepend-inner-icon="mdi-magnify" outlined></v-text-field>
-
-					<v-tooltip top>
-						<template v-slot:activator="{ on, attrs }">
-							<v-btn v-bind="attrs" v-on="on" @click="filters.groupBy = filters.groupBy == 'favourite' ? 'author' : 'favourite'" icon large class="ml-1" :disabled="filters.groupBy == 'songbook'">
-								<v-icon v-if="filters.groupBy == 'author'">mdi-playlist-star</v-icon>
-								<v-icon v-else>mdi-account-details-outline</v-icon>
-							</v-btn>
-						</template>
-						<span v-if="filters.groupBy == 'author'">Group by favourite</span>
-						<span v-else>Group by author</span>
-					</v-tooltip>
 				</v-row>
 				<!----------------------------------- Order by menu ----------------------------------->
-				<v-toolbar class="elevation-0 mt-n3" height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
+				<v-toolbar class="elevation-0 mt-n3 " height="40px" :color="$vuetify.theme.dark ? '#363636' : ''">
 					<v-menu rounded="large" transition="slide-y-transition" bottom>
 						<template v-slot:activator="{ on: onMenu }">
-							<v-btn text v-on="{ ...onMenu }" class="ml-n3">
-								<v-icon left>mdi-sort-alphabetical-ascending</v-icon>Order by
+							<v-btn text :icon="viewportSize.xs" v-on="{ ...onMenu }">
+								<v-icon :left="viewportSize.smAndUp">mdi-sort-alphabetical-ascending</v-icon>
+								<span v-if="viewportSize.smAndUp"> Order by </span>
 								<!-- <v-icon>mdi-chevron-down</v-icon> -->
 							</v-btn>
 						</template>
 						<v-list class="py-0">
+							<v-subheader>SONG ORDER</v-subheader>
 							<v-list-item @click.stop="onTitleName">
-								<v-list-item-title>Delete</v-list-item-title>
 								<v-list-item-icon>
-									<v-icon v-show="filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-									<v-icon v-show="!filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+									<v-icon :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-music-note-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Songs</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderBy == 'titleName'">
+									<v-icon v-show="filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.titleNameOrder" :color="filters.orderBy == 'titleName' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
-							<v-list-item @click.stop="onAuthorName">
-								<v-list-item-title>Authors</v-list-item-title>
+							<v-list-item @click.stop="onAuthorName" :disabled="filters.groupBy == 'author'">
 								<v-list-item-icon>
-									<v-icon v-show="filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-descending</v-icon>
-									<v-icon v-show="!filters.authorNameOrder" :color="filters.orderBy == 'authorName' || filters.groupBy == 'author' ? 'primary' : ''">mdi-sort-alphabetical-ascending</v-icon>
+									<v-icon :disabled="filters.groupBy == 'author'" :color="filters.orderBy == 'authorName' ? 'primary' : ''">mdi-account-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Authors</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderBy == 'authorName'">
+									<v-icon v-show="filters.authorNameOrder" :disabled="filters.groupBy == 'author'" :color="filters.orderBy == 'authorName' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.authorNameOrder" :disabled="filters.groupBy == 'author'" :color="filters.orderBy == 'authorName' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 							<v-list-item @click.stop="onDateModified">
-								<v-list-item-title>Date modified</v-list-item-title>
 								<v-list-item-icon>
-									<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-									<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+									<v-icon :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-calendar-edit</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Date modified</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderBy == 'dateModified'">
+									<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 							<v-list-item @click.stop="onDateCreated">
-								<v-list-item-title>Date created</v-list-item-title>
 								<v-list-item-icon>
-									<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-descending</v-icon>
-									<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-sort-calendar-ascending</v-icon>
+									<v-icon :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-calendar-plus</v-icon>
 								</v-list-item-icon>
+								<v-list-item-title>Date created</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderBy == 'dateCreated'">
+									<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-down</v-icon>
+								</v-list-item-icon>
+							</v-list-item>
+
+							<v-subheader>GROUP ORDER</v-subheader>
+							<v-list-item @click.stop="onGroupName">
+								<v-list-item-icon>
+									<v-icon :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-group</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Name</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderGroupBy == 'name'">
+									<v-icon v-show="filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-down</v-icon>
+								</v-list-item-icon>
+							</v-list-item>
+
+							<v-list-item @click.stop="onGroupName">
+								<v-list-item-icon>
+									<v-icon :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-group</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Name</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderGroupBy == 'name'">
+									<v-icon v-show="filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-down</v-icon>
+								</v-list-item-icon>
+							</v-list-item>
+						</v-list>
+					</v-menu>
+
+					<!----------------------------------- Group by menu ----------------------------------->
+					<v-menu rounded="large" transition="slide-y-transition" bottom>
+						<template v-slot:activator="{ on: onMenu }">
+							<v-btn text :icon="viewportSize.xs" v-on="{ ...onMenu }" :disabled="filters.groupBy == 'songbook'">
+								<v-icon :left="viewportSize.smAndUp" :color="filters.groupBy !== 'favourite' ? 'primary' : ''">mdi-group</v-icon>
+								<span v-if="viewportSize.smAndUp"> Group by </span>
+								<!-- <v-icon>mdi-chevron-down</v-icon> -->
+							</v-btn>
+						</template>
+						<v-list class="py-0">
+							<v-list-item @click.stop="filters.groupBy = filters.groupBy == 'author' ? 'favourite' : 'author'">
+								<v-list-item-icon>
+									<v-icon :color="filters.groupBy == 'author' ? 'primary' : ''">mdi-account-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Authors</v-list-item-title>
+							</v-list-item>
+						</v-list>
+						<v-list class="py-0">
+							<v-list-item @click.stop="filters.groupBy = filters.groupBy == 'label' ? 'favourite' : 'label'">
+								<v-list-item-icon>
+									<v-icon :color="filters.groupBy == 'label' ? 'primary' : ''">mdi-label-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Labels</v-list-item-title>
 							</v-list-item>
 						</v-list>
 					</v-menu>
 
 					<!----------------------------------- Select toolbar ----------------------------------->
 					<v-scroll-x-reverse-transition hide-on-leave>
-						<div v-if="!toggleSelectionTransition">
+						<div v-if="!toggleSelectionTransition" class="d-flex align-center">
 							<v-btn text @click="toggleSelection" key="selectButton">
 								<v-icon left v-if="!selectionEnabled">mdi-format-list-bulleted</v-icon>
 								<v-icon left v-else>mdi-playlist-remove</v-icon>
@@ -133,13 +186,14 @@
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-list expand>
 					<v-scroll-y-transition group hide-on-leave>
-						<v-list-group v-for="group in groupedSongs(filters)" :key="group.group">
+						<v-list-group v-for="group in groupedSongs(filters)" :key="group.group" :value="group.group == 'Collection'">
 							<template v-slot:activator>
 								<v-list-item-title>
 									<div class="d-flex" :style="{ 'min-width': '200px' }">
 										<div v-if="!selectionEnabled" class="align-self-center">
 											<v-icon v-if="filters.groupBy == 'songbook'" class="mr-3">mdi-playlist-music-outline</v-icon>
 											<v-icon v-else-if="filters.groupBy == 'author'" class="mr-3">mdi-account-circle-outline</v-icon>
+											<v-icon v-else-if="filters.groupBy == 'label'" class="mr-3">mdi-label-outline</v-icon>
 											<v-icon v-else-if="group.group == 'Collection'" class="mr-3">mdi-playlist-music-outline</v-icon>
 											<v-icon v-else class="mr-3">mdi-star-outline</v-icon>
 										</div>
