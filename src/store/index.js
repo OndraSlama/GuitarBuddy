@@ -2,7 +2,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 import * as firebase from "firebase";
 import normalizeString from "../functions/normalizeText";
-// import { uuid } from 'vue-uuid';
 
 Vue.use(Vuex);
 
