@@ -288,6 +288,7 @@ export default {
 
 		tempSource: {
 			handler: function() {
+				console.log("song emited");
 				this.$emit("input", this.formatedSong);
 			},
 			deep: true,

@@ -52,6 +52,8 @@ export default {
 					...songInput,
 				},
 			};
+
+			console.log(newSong);
 			this.$store.dispatch("addSong", newSong).then(() => (this.snackbar = true));
 		},
 	},

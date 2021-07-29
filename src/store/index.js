@@ -581,10 +581,8 @@ export default new Vuex.Store({
 					dispatch("setAuthor", {name: payload.author});
 					dispatch("setLabels", payload.labels);
 					let newSong = {
-						author: payload.author,
-						title: payload.title,
+						...payload,
 						input: { ...payload.input },
-						sections: payload.sections,
 						createdBy: getters.getUser.uid,
 						createdAt: new Date().toISOString(),
 						modifiedAt: new Date().toISOString(),

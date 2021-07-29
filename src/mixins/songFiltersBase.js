@@ -12,6 +12,7 @@ export default {
 				orderBy: "titleName",
 				orderGroupBy: "name",
 				groupNameOrder: false,
+				groupLabelOrder: false,
 				lastRow: null,
 			},
 
@@ -45,6 +46,10 @@ export default {
 		onGroupName() {
 			this.filters.groupNameOrder = this.filters.orderGroupBy == 'name' ? !this.filters.groupNameOrder : false;
 			this.filters.orderGroupBy = 'name';
+		},
+		onGroupLabel() {
+			this.filters.groupLabelOrder = this.filters.orderGroupBy == 'label' ? !this.filters.groupLabelOrder : false;
+			this.filters.orderGroupBy = 'label';
 		},
 	}
 

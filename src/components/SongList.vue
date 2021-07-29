@@ -76,14 +76,14 @@
 								</v-list-item-icon>
 							</v-list-item>
 
-							<v-list-item @click.stop="onGroupName">
+							<v-list-item @click.stop="onGroupLabel">
 								<v-list-item-icon>
-									<v-icon :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-group</v-icon>
+									<v-icon :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-group</v-icon>
 								</v-list-item-icon>
-								<v-list-item-title>Name</v-list-item-title>
-								<v-list-item-icon v-show="filters.orderGroupBy == 'name'">
-									<v-icon v-show="filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-up</v-icon>
-									<v-icon v-show="!filters.groupNameOrder" :color="filters.orderGroupBy == 'name' ? 'primary' : ''">mdi-chevron-down</v-icon>
+								<v-list-item-title>Label</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderGroupBy == 'label'">
+									<v-icon v-show="filters.groupLabelOrder" :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.groupLabelOrder" :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 						</v-list>
