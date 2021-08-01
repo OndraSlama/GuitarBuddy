@@ -6,13 +6,13 @@ export default {
 				groupBy: "favourite",
 				titleNameOrder: false,
 				authorNameOrder: false,
-				modifiedDateOrder: false,
-				createdDateOrder: false,
+				modifiedDateOrder: true,
+				createdDateOrder: true,
 				forksOrder: false,
-				orderBy: "titleName",
+				orderBy: "dateModified",
 				orderGroupBy: "name",
 				groupNameOrder: false,
-				groupLabelOrder: false,
+				groupSizeOrder: false,
 				lastRow: null,
 			},
 
@@ -30,12 +30,12 @@ export default {
 		},
 
 		onDateModified() {
-			this.filters.modifiedDateOrder =  this.filters.orderBy == 'dateModified' ? !this.filters.modifiedDateOrder : false;
+			this.filters.modifiedDateOrder =  this.filters.orderBy == 'dateModified' ? !this.filters.modifiedDateOrder : true;
 			this.filters.orderBy = 'dateModified';
 		},
 
 		onDateCreated() {
-			this.filters.createdDateOrder = this.filters.orderBy == 'dateCreated' ? !this.filters.createdDateOrder : false;
+			this.filters.createdDateOrder = this.filters.orderBy == 'dateCreated' ? !this.filters.createdDateOrder : true;
 			this.filters.orderBy = 'dateCreated';
 		},
 
@@ -47,9 +47,9 @@ export default {
 			this.filters.groupNameOrder = this.filters.orderGroupBy == 'name' ? !this.filters.groupNameOrder : false;
 			this.filters.orderGroupBy = 'name';
 		},
-		onGroupLabel() {
-			this.filters.groupLabelOrder = this.filters.orderGroupBy == 'label' ? !this.filters.groupLabelOrder : false;
-			this.filters.orderGroupBy = 'label';
+		onGroupSize() {
+			this.filters.groupSizeOrder = this.filters.orderGroupBy == 'size' ? !this.filters.groupSizeOrder : false;
+			this.filters.orderGroupBy = 'size';
 		},
 	}
 

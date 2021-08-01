@@ -49,8 +49,8 @@
 								</v-list-item-icon>
 								<v-list-item-title>Date modified</v-list-item-title>
 								<v-list-item-icon v-show="filters.orderBy == 'dateModified'">
-									<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-up</v-icon>
-									<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-down</v-icon>
+									<v-icon v-show="filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-down</v-icon>
+									<v-icon v-show="!filters.modifiedDateOrder" :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-chevron-up</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 							<v-list-item @click.stop="onDateCreated">
@@ -59,8 +59,8 @@
 								</v-list-item-icon>
 								<v-list-item-title>Date created</v-list-item-title>
 								<v-list-item-icon v-show="filters.orderBy == 'dateCreated'">
-									<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-up</v-icon>
-									<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-down</v-icon>
+									<v-icon v-show="filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-down</v-icon>
+									<v-icon v-show="!filters.createdDateOrder" :color="filters.orderBy == 'dateCreated' ? 'primary' : ''">mdi-chevron-up</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 
@@ -76,14 +76,14 @@
 								</v-list-item-icon>
 							</v-list-item>
 
-							<v-list-item @click.stop="onGroupLabel">
+							<v-list-item @click.stop="onGroupSize">
 								<v-list-item-icon>
-									<v-icon :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-group</v-icon>
+									<v-icon :color="filters.orderGroupBy == 'size' ? 'primary' : ''">mdi-group</v-icon>
 								</v-list-item-icon>
-								<v-list-item-title>Label</v-list-item-title>
-								<v-list-item-icon v-show="filters.orderGroupBy == 'label'">
-									<v-icon v-show="filters.groupLabelOrder" :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-chevron-up</v-icon>
-									<v-icon v-show="!filters.groupLabelOrder" :color="filters.orderGroupBy == 'label' ? 'primary' : ''">mdi-chevron-down</v-icon>
+								<v-list-item-title>Size</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderGroupBy == 'size'">
+									<v-icon v-show="filters.groupSizeOrder" :color="filters.orderGroupBy == 'size' ? 'primary' : ''">mdi-chevron-up</v-icon>
+									<v-icon v-show="!filters.groupSizeOrder" :color="filters.orderGroupBy == 'size' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
 						</v-list>
@@ -203,9 +203,7 @@
 											</v-fab-transition>
 										</div>
 
-										<div class="align-self-center text-truncate">
-											{{ group.group ? group.group : "Unknown" }}
-										</div>
+										<div class="align-self-center text-truncate">{{ group.group ? group.group : "Unknown" }} ({{ group.songs.length }})</div>
 
 										<div class="ml-auto" v-if="filters.groupBy == 'songbook'">
 											<v-btn icon @click.stop="askForSongBookName(group.group)">

@@ -161,7 +161,12 @@ export default new Vuex.Store({
 
 				// const authorNameOrder = filters.authorNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
 				const groupNameOrder = filters.groupNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
-				return groupNameOrder ? 1 : -1;
+				const groupSizeOrder =  filters.groupSizeOrder ? a.songs.length > b.songs.length : a.songs.length < b.songs.length;
+				if (filters.orderGroupBy == "size"){
+					return groupSizeOrder ? 1:-1;
+				}else{	
+					return groupNameOrder ? 1 : -1;
+				}
 			});		
 
 			if (groupsArray.length == 1)

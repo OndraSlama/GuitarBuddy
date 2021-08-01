@@ -191,12 +191,25 @@ export default {
 		},
 
 		parseChord(chord) {
-
+			
 			chord = chord.replace("mi", "m");
 			if (!this.standardNotation) {
 				chord = chord.replace("B", "A#");
 				chord = chord.replace("H", "B");
 			}
+			
+			var scale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+			let chord_regex = /.*?([A-H]#?)(s|as|es).*?/
+			let match = chord_regex.exec(chord);
+			while (match) {
+				let matched_chord = match[1]
+				let new_index = scale.indexOf(matched_chord) - 1
+				new_index = new_index < 0 ? scale.length + (new_index - 1) : new_index
+				chord = chord.replace(match[0], scale[new_index]);
+				
+				match = chord_regex.exec(chord);
+			}
+
 			return chord;
 		},
 
@@ -214,7 +227,7 @@ export default {
 	computed: {
 		chordRegexString() {
 			var notes = "[A-H]",
-				accidentals = "(bb|b|#)?",
+				accidentals = "(bb|b|#|s|es|ses|sas)?",
 				chords = "(maj|min|m|mi|M|\\+|-|dim|aug|sus)?",
 				suspends = "[0-9]*(sus)?[0-9]*";
 
