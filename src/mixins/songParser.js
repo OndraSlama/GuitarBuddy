@@ -198,6 +198,10 @@ export default {
 				chord = chord.replace("H", "B");
 			}
 			
+			chord = chord.replace("+", "aug");
+			chord = chord.replace("-", "m");
+			
+			// Convert 'as' to '#' with transposed base
 			var scale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 			let chord_regex = /.*?([A-H]#?)(s|as|es).*?/
 			let match = chord_regex.exec(chord);
