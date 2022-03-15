@@ -64,7 +64,7 @@ export default {
 
 		onDelete() {
 			this.$store.dispatch("deleteSong", this.id);
-			this.$router.push("/song-book");
+			this.$router.push("/");
 		},
 	},
 	computed: {
@@ -104,7 +104,7 @@ export default {
 
 		song: function() {
 			if (this.song === null || this.song === undefined) {
-				this.$router.push("/song-book").catch(() => {});
+				this.$router.push("/").catch(() => {});
 			}
 		},
 	},

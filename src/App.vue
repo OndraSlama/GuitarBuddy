@@ -4,7 +4,7 @@
 		<song-list></song-list>
 		<v-main class="pt-0">
 			<v-scroll-y-transition hide-on-leave>
-				<router-view class="mt-15 pa-sm-5 ma-2"></router-view>
+				<router-view class="mt-15 pa-sm-5 pa-0 ma-0"></router-view>
 			</v-scroll-y-transition>
 		</v-main>
 		<app-footer></app-footer>
@@ -32,6 +32,9 @@ export default {
 			return this.$vuetify.theme.dark ? "dark" : "light";
 		},
 	},
+	// mounted() {
+	// 	this.$store.dispatch("loadPublicSongs");
+	// },
 };
 </script>
 

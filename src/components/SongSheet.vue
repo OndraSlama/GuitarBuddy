@@ -4,7 +4,7 @@
 			<!----------------------------------- Header toolbar ----------------------------------->
 			<v-toolbar height="50px" class="elevation-0">
 				<v-toolbar-items>
-					<v-btn v-show="type === 'modal'" icon @click.stop="$emit('cancel')" class="ml-n3">
+					<v-btn v-show="type === 'modal'" icon @click.stop="$emit('cancel')" class="ml-n5">
 						<v-icon>mdi-window-close</v-icon>
 					</v-btn>
 					<v-btn icon @click="changeTranspose(-1)">
@@ -20,18 +20,18 @@
 					</v-btn>
 				</v-toolbar-items>
 				<v-spacer></v-spacer>
-				<v-toolbar-items>
+				<v-toolbar-items>			
 					<v-btn v-show="type !== 'session-view'" :disabled="playSessionActive" text :icon="collapse" @click.stop="sendToSession">
 						<v-icon :left="!collapse">mdi-share-outline</v-icon>
 						<span v-show="!collapse">to session</span>
 					</v-btn>
-					<v-btn v-show="editable" text :icon="collapse" @click.stop="askIfEditSong(song)">
+					<v-btn v-show="editable && viewportSize.smAndUp" text :icon="collapse" @click.stop="askIfEditSong(song)">
 						<v-icon :left="!collapse">mdi-pencil-outline</v-icon>
 						<span v-show="!collapse">Edit</span>
 					</v-btn>
 					<edit-public-song-dialog v-model="editPublicSongDialogOpened" v-on:accept="editPublicSong(currentSong)" />
 
-					<v-btn v-show="deletable" text :icon="collapse" @click.stop="askIfDeleteSong(song)">
+					<v-btn v-show="deletable && viewportSize.smAndUp" text :icon="collapse" @click.stop="askIfDeleteSong(song)">
 						<v-icon :left="!collapse">mdi-delete-outline</v-icon>
 						<span v-show="!collapse">Delete</span>
 					</v-btn>
@@ -39,7 +39,7 @@
 					<!-- <v-select @click.stop.prevent prepend-icon="mdi-format-size" v-model="currentPreferences.fontSize" :items="fontSizePreferences" label="Font size" solo flat></v-select> -->
 
 					<v-fab-transition>
-						<v-btn large icon @click="onFullscreenToggle">
+						<v-btn large icon @click="fullscreen = !fullscreen">
 							<v-icon v-if="fullscreen">mdi-fullscreen-exit</v-icon>
 							<v-icon v-else>mdi-fullscreen</v-icon>
 						</v-btn>
@@ -56,30 +56,30 @@
 								</v-btn>
 							</v-fab-transition>
 						</template>
-						<v-list class="py-0">
-							<v-list-item :disabled="true">
+						<v-list class="py-0">		
+
+							<v-list-item v-show="!viewportSize.smAndUp" :disabled="!editable" @click.stop="askIfEditSong(song)">
 								<v-list-item-icon>
-									<v-icon :disabled="true">mdi-printer</v-icon>
+									<v-icon>mdi-pencil-outline</v-icon>
 								</v-list-item-icon>
-								<v-list-item-title>Print</v-list-item-title>
+			
+								<v-list-item-title  >
+									Edit
+								</v-list-item-title>
 							</v-list-item>
 
-							<v-list-item :disabled="true">
+							<v-list-item v-show="!viewportSize.smAndUp" :disabled="!deletable" @click.stop="askIfDeleteSong(song)">
 								<v-list-item-icon>
-									<v-icon :disabled="true">mdi-download-outline</v-icon>
+									<v-icon>mdi-delete-outline</v-icon>
 								</v-list-item-icon>
-								<v-list-item-title>Download pdf</v-list-item-title>
+			
+								<v-list-item-title  >
+									Delete
+								</v-list-item-title>
 							</v-list-item>
 
-							<v-list-item :disabled="true">
-								<v-list-item-icon>
-									<v-icon :disabled="true">mdi-export-variant</v-icon>
-								</v-list-item-icon>
-								<v-list-item-title>Export as txt</v-list-item-title>
-							</v-list-item>
-
-							<v-divider class="my-1"></v-divider>
-
+							<v-divider v-show="!viewportSize.smAndUp" class="my-1"></v-divider>
+							
 							<v-list-item>
 								<v-tooltip top>
 									<template v-slot:activator="{ on, attrs }">
@@ -108,6 +108,20 @@
 								</v-list-item-content>
 							</v-list-item>
 
+							<v-list-item>
+								<v-tooltip top>
+									<template v-slot:activator="{ on, attrs }">
+										<v-list-item-icon v-bind="attrs" v-on="on">
+											<v-icon>mdi-arrow-down</v-icon>
+										</v-list-item-icon>
+									</template>
+									<span>Scroll speed</span>
+								</v-tooltip>
+								<v-list-item-content>
+									<v-slider @click.stop.prevent v-model="currentPreferences.scrollSpeed"  class="mt-n4 ml-n2 mb-n12 py-0" solo flat></v-slider>
+								</v-list-item-content>
+							</v-list-item>
+
 							<v-list-item @click.stop="currentPreferences.showTabs = !currentPreferences.showTabs">
 								<v-list-item-icon>
 									<v-icon>mdi-help-circle-outline</v-icon>
@@ -123,6 +137,31 @@
 								</v-row>
 								<!-- </v-list-item-content> -->
 							</v-list-item>
+
+							<v-divider class="my-1"></v-divider>
+
+							<v-list-item :disabled="true">
+								<v-list-item-icon>
+									<v-icon :disabled="true">mdi-printer</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Print</v-list-item-title>
+							</v-list-item>
+
+							<v-list-item :disabled="true">
+								<v-list-item-icon>
+									<v-icon :disabled="true">mdi-download-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Download pdf</v-list-item-title>
+							</v-list-item>
+
+							<v-list-item :disabled="true">
+								<v-list-item-icon>
+									<v-icon :disabled="true">mdi-export-variant</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Export as txt</v-list-item-title>
+							</v-list-item>
+
+
 						</v-list>
 					</v-menu>
 				</v-toolbar-items>
@@ -131,6 +170,10 @@
 			<!----------------------------------- Song ----------------------------------->
 			<div class="px-7 py-3">
 				<v-row v-if="songValid" class="">
+					<v-btn fab class="primary elevation-3" @click="togglePageScroll" fixed :style="{ bottom: viewportSize.mdAndUp ? '40px' : '80px', right: '40px' }" :key="123">
+						<v-icon>{{ scrollActive ?  "mdi-close" : "mdi-arrow-down" }}</v-icon>
+					</v-btn>
+
 					<v-col class>
 						<div class="display-2 text--primary" style="min-width: 200px">
 							{{ song.title ? song.title : "Song preview" }}
@@ -174,15 +217,15 @@
 					</div>
 				</v-scroll-y-transition>
 				<!----------------------------------- Song text ----------------------------------->
-				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', currentPreferences.multipleColumns ? 'multiple-columns' : '']" ref="songSheet">
-					<v-card :class="['mb-3 ', 'section', 'elevation-0', currentPreferences.multipleColumns ? 'multiple-columns mr-3' : '', section.name.toLowerCase()]" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
+				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', ...sectionClasses]" ref="songSheet">
+					<v-card :class="['mb-3 ', 'section', 'elevation-0', 'no-scroll', section.name.toLowerCase(), ...sectionClasses]" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
 						<v-divider v-if="!currentPreferences.multipleColumns && i > 0" class="mb-3"></v-divider>
 						<div v-html="formatSection(section)"></div>
 					</v-card>
 				</div>
 			</div>
 		</v-sheet>
-		<v-snackbar v-model="snackbar"> Screen won't turn off while in fullscreen mode </v-snackbar>
+		<v-snackbar v-model="snackbar"> Screen won't turn off while on this page </v-snackbar>
 	</fullscreen>
 </template>
 
@@ -197,18 +240,21 @@ export default {
 		return {
 			transpose: 0,
 			dynamicSectionFontSize: 20,
+			forceOneColumn: false,
+			maxFontSize: 40,
 			currentPreferences: {
 				fontSize: "Small",
 				notation: "German (A H C D E F G)",
 				showTabs: true,
 				multipleColumns: true,
+				scrollSpeed: 40,
 			},
-			maxFontSize: 35,
 			fullscreen: false,
 			snackbar: false,
 			updatingFontSize: true,
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
+			scrollActive: false,
 		};
 	},
 
@@ -225,6 +271,9 @@ export default {
 			//   this.minFontSize = 9;
 			this.currentPreferences.multipleColumns = multipleColumns;
 			this.dynamicSectionFontSize = this.maxFontSize;
+			this.$nextTick(() => {
+				this.updateFontSize();
+			});
 		},
 
 		changeTranspose(change) {
@@ -303,14 +352,27 @@ export default {
 		},
 
 		updateFontSize() {
-			//   if (this.currentPreferences.multipleColumns) {
+			if (!this.currentPreferences.multipleColumns) {
+				return
+			}
+			console.log("updating font size");
 			this.updatingFontSize = false;
+			this.forceOneColumn = false;
 			if (this.$refs.songSheet == undefined) return;
+
 			const width = this.$refs.songSheet.clientWidth;
 			const overflowDiff = width - this.$refs.songSheet.scrollWidth;
 			if (overflowDiff < 0 && this.dynamicSectionFontSize > this.minFontSize) {
-				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.05, 1);
+				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.08, 1);
 				this.updatingFontSize = true;
+				
+				this.$nextTick(() => {
+					this.updateFontSize();
+				});
+			}
+
+			if (!this.updatingFontSize && overflowDiff < 0) {
+				this.forceOneColumn = true		
 			}
 
 			//   } else {
@@ -320,18 +382,11 @@ export default {
 
 		onResize() {
 			this.dynamicSectionFontSize = this.maxFontSize;
-			this.updateFontSize();
+			this.$nextTick(() => {
+				this.updateFontSize();
+			});
 		},
 
-		onFullscreenToggle() {
-			this.fullscreen = !this.fullscreen;
-			if (this.fullscreen) {
-				this.snackbar = true;
-				this.vueInsomnia().on();
-			} else {
-				this.vueInsomnia().off();
-			}
-		},
 
 		askIfEditSong(song) {
 			if (this.userLogged) {
@@ -370,9 +425,40 @@ export default {
 		deleteSong(songId) {
 			this.$store.dispatch("deleteSong", songId);
 		},
+
+		togglePageScroll(){
+			this.scrollActive = !this.scrollActive;
+			console.log(this.currentPreferences.scrollSpeed);
+			if (this.scrollActive) {
+				this.pageScroll()
+			}			
+		},
+
+		pageScroll(){
+			if (!this.scrollActive) {
+				return
+			}
+
+			window.scrollBy(0, 1);
+			setTimeout(() => {
+				this.pageScroll();
+			}, 500 - 500*this.currentPreferences.scrollSpeed/100);
+		}
+	
 	},
 
 	computed: {
+		sectionClasses(){
+			let classes = [];
+			if (this.currentPreferences.multipleColumns) {
+				classes.push("dynamic-sections");
+				if (!this.forceOneColumn) {
+					classes.push("no-scroll");
+				}
+			}
+			return classes
+		},
+
 		playSessionActive() {
 			return !this.playSession?.id;
 		},
@@ -416,13 +502,12 @@ export default {
 		},
 
 		minFontSize() {
-			if (this.currentPreferences.multipleColumns) return 2;
 
 			switch (this.fontSizePreferences.indexOf(this.currentPreferences.fontSize)) {
 				case 0:
-					return 9;
+					return 11;
 				case 1:
-					return 14;
+					return 16;
 				case 2:
 					return 22;
 			}
@@ -456,32 +541,46 @@ export default {
 	},
 
 	created() {
-		this.currentPreferences = { ...this.storePreferences };
+		this.currentPreferences = { ...this.preferences };
 		window.addEventListener("resize", this.onResize);
 	},
 	destroyed() {
 		window.removeEventListener("resize", this.onResize);
 	},
 	updated() {
-		this.updateFontSize();
+		// if (this.updatingFontSize){
+		// 	this.updateFontSize();
+		// 	console.log("updating font size");
+		// }
 		this.renderTabs();
 	},
 	mounted() {
 		this.currentPreferences = { ...this.preferences };
-
+		console.log(this.currentPreferences.fontSize);
 		// this.currentPreferences.multipleColumns = !this.viewportSize.xs;
 		this.updateFontSize();
 		this.renderTabs();
+
+		this.snackbar = true;
+		this.vueInsomnia().on();
+	},
+
+	unmounted() {
+		this.vueInsomnia().off();
 	},
 
 	watch: {
 		minFontSize: function() {
 			this.dynamicSectionFontSize = this.maxFontSize;
-			this.updateFontSize();
+			this.$nextTick(() => {
+				this.updateFontSize();
+			});
 		},
 		expanded: function() {
 			this.dynamicSectionFontSize = this.maxFontSize;
-			this.updateFontSize();
+			this.$nextTick(() => {
+				this.updateFontSize();
+			});
 		},
 	},
 };
@@ -495,29 +594,30 @@ export default {
 	font-family: "Roboto Mono", monospace;
 }
 
-.section.multiple-columns {
+.section.dynamic-sections {
 	display: inline-block;
 	background-color: rgba(139, 139, 139, 0.082);
 	border-radius: 5px;
+	margin-right: 5px;
 	// border: 1px solid grey;
 	padding: 10px;
 	border-style: dotted;
 	// margin-right: 20px;
 }
 
-.section.multiple-columns.chorus {
+.section.dynamic-sections.chorus {
 	background-color: rgba(150, 111, 3, 0.137);
 }
 
-.section.multiple-columns.intro {
+.section.dynamic-sections.intro {
 	background-color: rgba(2, 63, 194, 0.096);
 }
 
-.section.multiple-columns.ending {
+.section.dynamic-sections.ending {
 	background-color: rgba(34, 194, 2, 0.096);
 }
 
-.section.multiple-columns.bridge {
+.section.dynamic-sections.bridge {
 	background-color: rgba(133, 2, 194, 0.055);
 }
 
@@ -531,13 +631,18 @@ export default {
 	// border: 1px solid green;
 	// align-items: center;
 }
-.song-sheet.multiple-columns {
+.song-sheet.dynamic-sections {
 	// border: 1px solid green;
 	display: flex;
 	flex-flow: column wrap;
 	justify-content: space-around;
 	// align-items: center;
 	// align-content: space-around;
-	max-height: 85vh;
+	// max-height: 85vh;
+	
+}
+
+.no-scroll{
+	max-height: 85vh;	
 }
 </style>

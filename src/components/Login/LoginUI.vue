@@ -14,7 +14,7 @@ export default {
       ui = new firebaseui.auth.AuthUI(firebase.auth());
     }
     var uiConfig = {
-      signInSuccessUrl: this.next === undefined ? "/song-book" : this.next,
+      signInSuccessUrl: this.next === undefined ? "/" : this.next,
       signInOptions: [
         firebase.auth.GoogleAuthProvider.PROVIDER_ID,
         firebase.auth.FacebookAuthProvider.PROVIDER_ID,

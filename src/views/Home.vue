@@ -131,8 +131,8 @@
 					</v-toolbar>
 					<!----------------------------------- Song list ----------------------------------->
 					<v-sheet class="elevation-1">
-						<v-skeleton-loader v-show="publicSongListLoading" v-for="n in 5" :key="n" type="list-item-two-line"></v-skeleton-loader>
-						<v-list v-if="!publicSongListLoading" expand>
+						<v-skeleton-loader v-show="showLoading" v-for="n in 5" :key="n" type="list-item-two-line"></v-skeleton-loader>
+						<v-list v-if="!showLoading" expand>
 							<v-scroll-x-transition group hide-on-leave>
 								<v-list-group class="d-none" key="group"></v-list-group>
 								<v-list-item-group class="d-none" key="item-group"></v-list-item-group>
@@ -145,7 +145,7 @@
 										<!-- <template > -->
 										<!-- <v-divider class="mx-3" :key="n" v-if="n !== 0"></v-divider> -->
 
-										<v-list-item v-for="song in group.songs" :two-line="!filters.groupBy == 'author'" @click.stop="openSongDialog(song)" :key="song.id" prepend-icon="mdi-account-circle-outline">
+										<v-list-item v-for="song in group.songs" :two-line="!filters.groupBy == 'author'" router :to="'/song/' + song.id" :key="song.id" prepend-icon="mdi-account-circle-outline">
 											<v-list-item-content>
 												<v-list-item-title>
 													<v-icon v-if="filters.groupBy == 'author'" color="grey" class="mr-2">mdi-music-note-outline</v-icon>
@@ -198,7 +198,6 @@
 								<!-- </v-list-group> -->
 							</v-scroll-x-transition>
 						</v-list>
-						<song-dialog v-model="dialogOpened" :song="loadedSong"></song-dialog>
 					</v-sheet>
 				</v-col>
 			</v-row>
@@ -227,7 +226,6 @@
 
 <script>
 import { mapGetters } from "vuex";
-import SongDialog from "../components/Dialogs/SongDialog";
 import filtersBase from "../mixins/songFiltersBase";
 // @ is an alias to /src
 export default {
@@ -243,11 +241,7 @@ export default {
 		formatDate(dateString) {
 			let date = new Date(dateString);
 			return this.$moment(date, "YYYY.MM.DD-h:m").fromNow();
-		},
-		openSongDialog(song) {
-			this.dialogOpened = true;
-			this.$store.dispatch("loadPublicSong", song);
-		},
+		},	
 		addToCollection(song) {
 			this.$store.dispatch("savePublicSongToUser", song);
 		},
@@ -267,6 +261,9 @@ export default {
 	},
 
 	computed: {
+		showLoading() {
+			return this.publicSongListLoading && this.grouperSong;
+		},
 		showList() {
 			return this.filteredPublicSongs.length > 0;
 		},
@@ -293,16 +290,13 @@ export default {
 		}),
 	},
 
-	components: {
-		"song-dialog": SongDialog,
-	},
 	created() {
 		this.$store.commit("setCurrentPage", "Browse Songs");
-		this.$store.dispatch("loadPublicSongsOn");
+		this.$store.dispatch("loadPublicSongs");
 	},
-	beforeDestroy() {
-		this.$store.dispatch("loadPublicSongsOff");
-	},
+	// beforeDestroy() {
+	// 	 this.$store.dispatch("loadPublicSongsOff");
+	// },
 };
 </script>
 

@@ -17,6 +17,7 @@ export default new Vuex.Store({
 			fontSize: "Medium",
 			multipleColumns: true,
 			showTabs: true,
+			scrollSpeed: 40,
 		},
 
 		fontSizePreferences: ["Small", "Medium", "Large"],
@@ -40,6 +41,7 @@ export default new Vuex.Store({
 		getSongListOpened: (state) => state.songListOpened,
 		getLoadedSong: (state) => state.loadedSong,
 		getCurrentSong: (state) => (id) => state.userSongs.find((el) => el.id === id),
+		getPublicSong: (state) => (id) => state.publicSongs.find((el) => el.id === id),
 
 		getFilteredUserSongs: (state, getters) => (filters) => {
 			if (!getters.getUserLogged || state.userSongs === undefined) return [];
@@ -254,21 +256,66 @@ export default new Vuex.Store({
 		},
 	},
 	actions: {
-		loadPublicSong({ commit }, payload) {
-			commit("setSongLoading", true);
-			firebase
-				.database()
-				.ref("users/" + payload.createdBy + "/songs/" + payload.id)
-				.once("value")
-				.then((data) => {
-					commit("setLoadedSong", { ...data.val(), id: data.key });
-					commit("setSongLoading", false);
+		loadPublicSongs({ commit }) {
+			commit("setPublicSongListLoading", true);
+			return new Promise((resolve) => {
+				firebase
+					.database()
+					.ref("publicSongs")
+					.once("value", (data) => {
+						let publicSongs = [];
+						let obj = data.val();
+						for (let key in obj) {
+							publicSongs.push({
+								id: key,
+								...obj[key],
+							});
+						}
+						commit("setPublicSongs", publicSongs);
+						commit("setPublicSongListLoading", false);
+						resolve(publicSongs);
+					});
 				})
-				.catch((e) => {
+			},
+			
+		loadSong({ getters, commit, dispatch }, payload) {
+			commit("setSongLoading", true);
+			
+			return new Promise((resolve, reject) => {
+				let userSong = getters.getCurrentSong(payload)
+				if (userSong) {
+					console.log("userSong", userSong);
+					resolve(userSong)
 					commit("setSongLoading", false);
-					console.log(e);
-				});
+				}else{					
+					dispatch("loadPublicSongs").then(() => {
+						let publicSong = getters.getPublicSong(payload)
+						if (!publicSong) {
+							reject("Song not found")
+							commit("setSongLoading", false);
+							return
+						}
+
+						firebase
+							.database()
+							.ref("users/" + publicSong.createdBy + "/songs/" + publicSong.id)
+							.once("value")
+							.then((data) => {
+								resolve({ ...data.val(), id: data.key });							
+							})
+							.catch((e) => {
+								reject(e);
+							})
+							.finally(() => {
+								commit("setSongLoading", false);
+							})
+					})
+				}
+				
+			});			
 		},
+
+		
 
 		loadAuthors({commit}){
 			firebase
@@ -304,37 +351,37 @@ export default new Vuex.Store({
 				});
 		},
 
-		loadPublicSongsOn({ commit }) {
-			commit("setPublicSongListLoading", true);
-			commit("resetPublicSongs");
-			firebase
-				.database()
-				.ref("publicSongs")
-				.on("value", (data) => {
-					let publicSongs = [];
-					let obj = data.val();
-					for (let key in obj) {
-						publicSongs.push({
-							id: key,
-							...obj[key],
-						});
-					}
-					commit("setPublicSongs", publicSongs);
-					commit("setPublicSongListLoading", false);
-				});
-			// .catch((e) => {
-			// 	console.log(e);
-			// 	console.log("database error");
-			// 	commit("setPublicSongListLoading", false);
-			// });
-		},
+		// loadPublicSongsOn({ commit }) {
+		// 	commit("setPublicSongListLoading", true);
+		// 	commit("resetPublicSongs");
+		// 	firebase
+		// 		.database()
+		// 		.ref("publicSongs")
+		// 		.on("value", (data) => {
+		// 			let publicSongs = [];
+		// 			let obj = data.val();
+		// 			for (let key in obj) {
+		// 				publicSongs.push({
+		// 					id: key,
+		// 					...obj[key],
+		// 				});
+		// 			}
+		// 			commit("setPublicSongs", publicSongs);
+		// 			commit("setPublicSongListLoading", false);
+		// 		});
+		// 	// .catch((e) => {
+		// 	// 	console.log(e);
+		// 	// 	console.log("database error");
+		// 	// 	commit("setPublicSongListLoading", false);
+		// 	// });
+		// },
 
-		loadPublicSongsOff() {
-			firebase
-				.database()
-				.ref("publicSongs")
-				.off("value");
-		},
+		// loadPublicSongsOff() {
+		// 	firebase
+		// 		.database()
+		// 		.ref("publicSongs")
+		// 		.off("value");
+		// },
 
 
 		loadUserDataOn({ getters, commit }) {

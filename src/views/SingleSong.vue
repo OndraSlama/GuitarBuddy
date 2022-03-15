@@ -20,6 +20,7 @@ export default {
 		return {
 			transitioning: false,
 			songDoesNotExist: false,
+			song: null
 		};
 	},
 
@@ -29,15 +30,30 @@ export default {
 				this.$store.commit("setCurrentPage", this.song?.title + " - " + (this.song.author.trim() || "Unknown"));
 			}
 		},
+
+		loadSong(id){
+			this.$store.dispatch("loadSong", id)
+				.then((song) => {
+					this.song = song;
+					this.updateNavigationTitle();
+					this.transitioning = true;
+					this.songDoesNotExist = false;
+					setTimeout(() => {
+						this.transitioning = false;
+					}, 150);
+					setTimeout(() => {
+						this.songDoesNotExist = true;
+					}, 1200);
+				})
+				.catch((e) => {
+					console.log(e);
+				});
+	},
 	},
 
 	computed: {
 		id() {
 			return this.$route.params.id;
-		},
-
-		song() {
-			return this.$store.getters.getCurrentSong(this.id);
 		},
 
 		songValid() {
@@ -52,8 +68,12 @@ export default {
 		"song-sheet": SongSheet,
 	},
 
-	updated() {
-		this.updateNavigationTitle();
+	// updated() {
+	// 	this.updateNavigationTitle();
+	// },
+
+	mounted() {
+		this.loadSong(this.id);
 	},
 
 	created() {
@@ -61,20 +81,13 @@ export default {
 		setTimeout(() => {
 			this.songDoesNotExist = true;
 		}, 400);
-	},
+	},	
 
 	watch: {
 		id: function() {
-			this.updateNavigationTitle();
-			this.transitioning = true;
-			this.songDoesNotExist = false;
-			setTimeout(() => {
-				this.transitioning = false;
-			}, 150);
-			setTimeout(() => {
-				this.songDoesNotExist = true;
-			}, 1200);
+			this.loadSong(this.id)
 		},
+
 		song: function() {
 			this.updateNavigationTitle();
 			if (!this.songValid) {
