@@ -14,7 +14,7 @@ export default new Vuex.Store({
 		userPreferences: {},
 		defaultPreferences: {
 			notation: "German (A H C D E F G)",
-			fontSize: "Medium",
+			fontSize: "Small",
 			multipleColumns: true,
 			showTabs: true,
 			scrollSpeed: 40,
@@ -56,7 +56,12 @@ export default new Vuex.Store({
 		getUser: (state) => state.user,
 		getUserSongs: (state) => state.userSongs,
 		getUserSongBooks: (state) => state.userSongBooks,
-		getUserPreferences: (state) => state.userPreferences,
+		getUserPreferences: (state, getters) => {
+			if (getters.getUserLogged && state.userPreferences && Object.keys(state.userPreferences).length > 0) {
+				return state.userPreferences;
+			}
+			return state.defaultPreferences;
+		},
 		getPlaySession: (state) => state.playSession,
 		getDefaultPreferences: (state) => state.defaultPreferences,
 		getFontSizePreferences: (state) => state.fontSizePreferences,
@@ -81,7 +86,6 @@ export default new Vuex.Store({
 
 			let groupsObject = {};
 
-			// Prepare groups if group by "songbooks" - because there can be empty songbooks
 			let playbooks = getters.getUserSongBooks;
 			if (filters.groupBy == 'songbook'){
 				for (const key in playbooks) {
@@ -91,7 +95,6 @@ export default new Vuex.Store({
 
 			filteredSongs.forEach((song) => {
 				let groups = [];
-				// Determine groups for every song
 				if (filters.groupBy == 'songbook'){
 					for (const key in playbooks) {
 						if (Object.prototype.hasOwnProperty.call(playbooks[key], song["id"])) {
@@ -118,7 +121,6 @@ export default new Vuex.Store({
 					}	
 				}
 
-				// Save to group objects
 				groups.forEach(group => {						
 					if (groupsObject[group] == undefined) {
 						groupsObject[group] = [];
@@ -127,7 +129,6 @@ export default new Vuex.Store({
 				});
 			});
 
-			// Convert object to array
 			let groupsArray = [];
 			for (let key in groupsObject) {
 				groupsArray.push({ group: key, songs: groupsObject[key] });
@@ -161,7 +162,6 @@ export default new Vuex.Store({
 				if (a.group === "Favourite") return -1;
 				if (b.group === "Favourite") return 1;
 
-				// const authorNameOrder = filters.authorNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
 				const groupNameOrder = filters.groupNameOrder ? normalizeString(a.group) < normalizeString(b.group) : normalizeString(a.group) > normalizeString(b.group);
 				const groupSizeOrder =  filters.groupSizeOrder ? a.songs.length > b.songs.length : a.songs.length < b.songs.length;
 				if (filters.orderGroupBy == "size"){
@@ -227,6 +227,10 @@ export default new Vuex.Store({
 		},
 		logout(state) {
 			state.user = null;
+			state.userSongs = [];
+			state.userSongBooks = {};
+			state.playSession = undefined;
+			state.userPreferences = {};
 		},
 		setUser(state, user) {
 			state.user = {
@@ -351,39 +355,6 @@ export default new Vuex.Store({
 				});
 		},
 
-		// loadPublicSongsOn({ commit }) {
-		// 	commit("setPublicSongListLoading", true);
-		// 	commit("resetPublicSongs");
-		// 	firebase
-		// 		.database()
-		// 		.ref("publicSongs")
-		// 		.on("value", (data) => {
-		// 			let publicSongs = [];
-		// 			let obj = data.val();
-		// 			for (let key in obj) {
-		// 				publicSongs.push({
-		// 					id: key,
-		// 					...obj[key],
-		// 				});
-		// 			}
-		// 			commit("setPublicSongs", publicSongs);
-		// 			commit("setPublicSongListLoading", false);
-		// 		});
-		// 	// .catch((e) => {
-		// 	// 	console.log(e);
-		// 	// 	console.log("database error");
-		// 	// 	commit("setPublicSongListLoading", false);
-		// 	// });
-		// },
-
-		// loadPublicSongsOff() {
-		// 	firebase
-		// 		.database()
-		// 		.ref("publicSongs")
-		// 		.off("value");
-		// },
-
-
 		loadUserDataOn({ getters, commit }) {
 			if (getters.getUserLogged) {
 				commit("setSongListLoading", true);
@@ -395,18 +366,18 @@ export default new Vuex.Store({
 						if (getters.getUserLogged) {
 							const obj = data.val();
 
-							// Parse user songs
 							let userSongs = [];
-							for (let key in obj["songs"]) {
-								userSongs.push({
-									id: key,
-									...obj["songs"][key],
-								});
+							if (obj && obj["songs"]) {
+								for (let key in obj["songs"]) {
+									userSongs.push({
+										id: key,
+										...obj["songs"][key],
+									});
+								}
 							}							
 							commit("setUserSongs", userSongs);
 							
-							// Parse user songbooks
-							let songbooks = obj["playBooks"];
+							let songbooks = (obj && obj["playBooks"]) ? obj["playBooks"] : {};
 							for (const key in songbooks) {
 								for (const songid in songbooks[key]) {
 									if (!songbooks[key][songid]){
@@ -416,18 +387,26 @@ export default new Vuex.Store({
 							}
 							commit("setUserSongBooks", {...songbooks});
 
-							// Parse user preferences
-							if(obj["preferences"]){
+							if(obj && obj["preferences"]){
 								commit("setUserPreferences", {...obj["preferences"]});
 							}else{
-								commit("setUserPreferences", getters.getDefaultPreferences);
+								const defaultPrefs = getters.getDefaultPreferences;
+								commit("setUserPreferences", defaultPrefs);
+								if (getters.getUserLogged) {
+									firebase
+										.database()
+										.ref("users/" + getters.getUser.uid + "/preferences")
+										.set(defaultPrefs)
+										.catch((e) => {
+											console.error("Error saving default preferences for new user:", e);
+										});
+								}
 							}
 							
-							// Parse play session
-							commit("setPlaySession", {...obj["playSession"]});
+							commit("setPlaySession", (obj && obj["playSession"]) ? {...obj["playSession"]} : undefined);
 						}
 					});
-			}else{
+			} else {
 				commit("setUserPreferences", getters.getDefaultPreferences);
 			}
 		},
@@ -445,6 +424,7 @@ export default new Vuex.Store({
 			return new Promise((resolve, reject) => {
 				if (!getters.getUserLogged) {
 					reject()
+					return;
 				}
 				
 				firebase
@@ -511,6 +491,8 @@ export default new Vuex.Store({
 							
 							
 						});					
+				} else {
+					reject("User not logged in");
 				}
 			});
 		},
@@ -531,18 +513,25 @@ export default new Vuex.Store({
 							reject(e);
 						});
 										
+				} else {
+					reject("User not logged in");
 				}
 			});
 		},
 
         playSessionOn({commit}, payload) {
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
                 firebase
                     .database()
                     .ref("playSessions/" + payload)
                     .once("value")
                     .then((data) => {		
-						let session = data.val();	
+						let session = data.val();
+						if (!session || !session.createdBy) {
+							console.error("Play session or createdBy field is missing for ID:", payload);
+							reject("Invalid session data");
+							return;
+						}	
 						firebase
 							.database()
 							.ref("users/" + session.createdBy + "/playSession")
@@ -552,7 +541,7 @@ export default new Vuex.Store({
 								firebase
 									.database()
 									.ref("users/" + session.createdBy + "/playSession")
-									.update({connected: obj.connected + 1})
+									.update({connected: (obj && obj.connected ? obj.connected : 0) + 1})
 								})
                         firebase
                             .database()
@@ -564,19 +553,25 @@ export default new Vuex.Store({
                     })
                     .catch((e) => {
                         console.log(e);
+						reject(e);
                     });
 			});
 		},
 
         playSessionOff(_, payload) {
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				firebase
 				.database()
 				.ref("playSessions/" + payload)
 				.once("value")
 				.then((data) => {		
 						
-						let session = data.val();	
+						let session = data.val();
+						if (!session || !session.createdBy) {
+							console.error("Play session or createdBy field is missing for ID:", payload);
+							resolve(); 
+							return;
+						}	
 						firebase
 							.database()
 							.ref("users/" + session.createdBy + "/playSession")
@@ -587,7 +582,7 @@ export default new Vuex.Store({
 								firebase
 									.database()
 									.ref("users/" + session.createdBy + "/playSession")
-									.update({connected: obj.connected - 1})
+									.update({connected: (obj && obj.connected ? obj.connected : 1) - 1})
 								})
                         firebase
                             .database()
@@ -597,32 +592,31 @@ export default new Vuex.Store({
 
                         resolve();
                     })
-                    .catch((e) => {console.log(e)});   
+                    .catch((e) => {
+						console.log(e);
+						reject(e);
+					});   
 			});
 		},	
-
-
-
-
-
 		
 		stopPlaySession({ getters }, payload) {
-			// commit("setSongListLoading", true);
-			// console.log(commit);
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				if (getters.getUserLogged) {	 
 
 					firebase
 						.database()
 						.ref("playSessions/" + payload)
-						.remove()
+						.remove();
 
 					firebase
 						.database()
 						.ref("users/" + getters.getUser.uid + "/playSession")
 						.remove()
-						.then(() => { resolve() })							 
+						.then(() => { resolve() })
+						.catch((e) => reject(e));							 
 						
+				} else {
+					reject("User not logged in");
 				}
 			});
 		},
@@ -657,6 +651,8 @@ export default new Vuex.Store({
 							console.log(e);
 							reject();
 						});
+				} else {
+					reject("User not logged in");
 				}
 			});
 		},
@@ -674,7 +670,6 @@ export default new Vuex.Store({
 							...payload.data,
 						})
 						.then(() => {
-							// commit("updateSong", payload);
 							if (payload.data.createdBy === getters.getUser.uid) {
 								if (payload.data.public) {
 									dispatch("setPublicSong", payload);
@@ -690,13 +685,14 @@ export default new Vuex.Store({
 							commit("setSongListLoading", false);
 							reject();
 						});
+				} else {
+					commit("setSongListLoading", false);
+					reject("User not logged in");
 				}
 			});
 		},
 
 		deleteSong({ dispatch, getters }, payload) {
-			// commit("setSongListLoading", true);
-			// console.log(commit);
 			return new Promise((resolve, reject) => {
 				if (getters.getUserLogged) {
 					firebase
@@ -720,8 +716,9 @@ export default new Vuex.Store({
 						.catch((e) => {
 							console.log(e);
 							reject()
-							// commit("setSongListLoading", false);
 						});
+				} else {
+					reject("User not logged in");
 				}
 			});
 		},
@@ -795,12 +792,13 @@ export default new Vuex.Store({
 		},
 
 		addSongBook( {getters }, payload){
-			// console.log(getters.getUserSongs);
-			if (getters.getUserLogged && getters.getUserSongs.length > 0) {					 
+			if (getters.getUserLogged) {
+				const initialSongId = getters.getUserSongs.length > 0 ? getters.getUserSongs[0].id : "placeholder_song_id_for_empty_songbook";
+				const updateData = getters.getUserSongs.length > 0 ? { [initialSongId]: false } : { "placeholder": true };
 				firebase
 					.database()
 					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload)
-					.update({ [getters.getUserSongs[0].id]: false })
+					.update(updateData)
 					.catch((e) => {
 						console.log(e);
 					});						
@@ -808,7 +806,6 @@ export default new Vuex.Store({
 		},
 
 		changeSongBookName( {getters }, payload){
-			// console.log(getters.getUserSongs);
 			if (getters.getUserLogged) {
 				let songBooks = firebase.database().ref("users/" + getters.getUser.uid + "/playBooks/");
 
@@ -825,7 +822,6 @@ export default new Vuex.Store({
 		},
 		
 		deleteSongBook( {getters }, payload){
-			// console.log(getters.getUserSongs);
 			if (getters.getUserLogged) {					 
 				firebase
 					.database()
@@ -839,10 +835,12 @@ export default new Vuex.Store({
 		
 		addSongToSongbook({ getters }, payload) {
 			if (getters.getUserLogged) {
-				firebase
-					.database()
-					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
-					.update({ [payload.id]: true })
+				const updateData = { [payload.id]: true };
+				const songbookRef = firebase.database().ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook);
+				
+				songbookRef.child("placeholder").remove(); 
+				songbookRef
+					.update(updateData)
 					.catch((e) => {
 						console.log(e);
 					});						
@@ -854,7 +852,7 @@ export default new Vuex.Store({
 				firebase
 					.database()
 					.ref("users/" + getters.getUser.uid + "/playBooks/" + payload.songbook)
-					.update({ [payload.id]: false })
+					.update({ [payload.id]: false }) 
 					.catch((e) => {
 						console.log(e);
 					});						
@@ -863,27 +861,35 @@ export default new Vuex.Store({
 
 
 		setAuthor(_, payload){
-			firebase
-				.database()
-				.ref("authors")
-				.update({[payload.name]: true})
-				.catch((e) => {
-					console.log(e);
-				});
+			if (payload.name && payload.name.trim() !== "") {
+				firebase
+					.database()
+					.ref("authors")
+					.update({[payload.name]: true})
+					.catch((e) => {
+						console.log(e);
+					});
+			}
 		},
 
 		setLabels(_, payload){
-			let labels = {};
-			payload.forEach((label) => {
-				labels[label] = true;
-			})
-			firebase
-				.database()
-				.ref("labels")
-				.update(labels)
-				.catch((e) => {
-					console.log(e);
-				});
+			if (payload && payload.length > 0) {
+				let labels = {};
+				payload.forEach((label) => {
+					if (label && label.trim() !== "") {
+						labels[label] = true;
+					}
+				})
+				if (Object.keys(labels).length > 0) {
+					firebase
+						.database()
+						.ref("labels")
+						.update(labels)
+						.catch((e) => {
+							console.log(e);
+						});
+				}
+			}
 		},
 
 
@@ -898,12 +904,43 @@ export default new Vuex.Store({
 					console.log(e);
 				});
 		},
+        registerUserWithEmailAndPassword(_, payload) {
+            return new Promise((resolve, reject) => {
+                firebase.auth().createUserWithEmailAndPassword(payload.email, payload.password)
+                    .then(userCredential => {
+                        console.log("User registered successfully:", userCredential.user);
+                        resolve(userCredential.user);
+                    })
+                    .catch(error => {
+                        console.error("Error registering user:", error);
+                        reject(error);
+                    });
+            });
+        },
 
-		logout() {
+        loginUserWithEmailAndPassword(_, payload) {
+            return new Promise((resolve, reject) => {
+                firebase.auth().signInWithEmailAndPassword(payload.email, payload.password)
+                    .then(userCredential => {
+                        console.log("User logged in successfully:", userCredential.user);
+                        resolve(userCredential.user);
+                    })
+                    .catch(error => {
+                        console.error("Error logging in user:", error);
+                        reject(error);
+                    });
+            });
+        },
+		logout({commit, dispatch}) {
 			return new Promise((resolve, reject) => {
 				firebase
 					.auth()
 					.signOut()
+					.then(() => {
+						dispatch("loadUserDataOff"); 
+						commit("logout"); 
+						resolve();
+					})
 					.catch((err) => {
 						reject(err);
 					});
@@ -911,19 +948,21 @@ export default new Vuex.Store({
 		},
 
 		setUserStatusChange({ commit, dispatch }) {
-			return new Promise((resolve) => {
-				firebase.auth().onAuthStateChanged((user) => {
-					if (user) {
-						commit("setUser", user);
-						dispatch("loadUserDataOn");
-						resolve(user);
-					} else {
-						dispatch("loadUserDataOff");
-						commit("logout");
-					}
-				});
-			});
-		},
+            return new Promise((resolve) => {
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        commit("setUser", user);
+                        dispatch("loadUserDataOn");
+                        resolve(user);
+                    } else {
+                        dispatch("loadUserDataOff");
+                        commit("logout");
+						commit("setUserPreferences", { ...this.state.defaultPreferences });
+						resolve(null);
+                    }
+                });
+            });
+        },
 	},
 	modules: {},
 });

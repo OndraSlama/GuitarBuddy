@@ -35,12 +35,12 @@
 				</v-btn>
 				<!-- <login-dialog></login-dialog> -->
 				<v-btn :icon="viewportSize.smAndDown" v-if="userLogged" text @click.stop="signOut">
-					<v-icon :left="viewportSize.smAndDown">mdi-login-variant</v-icon>
+					<v-icon :left="viewportSize.smAndDown">mdi-logout-variant</v-icon>
 					<span class="hidden-sm-and-down">Sign Out</span>
 				</v-btn>
-				<v-btn icon v-if="userLogged" to="/user">
-					<img :style="{ width: viewportSize.smAndDown ? '35px' : '45px', height: viewportSize.smAndDown ? '35px' : '45px', 'border-radius': '50%' }" :src="user.photoURL" :alt="user.displayName" />
-				</v-btn>
+                <v-btn icon v-if="userLogged" to="/user">
+                    <v-icon :size="viewportSize.smAndDown ? 24 : 30">mdi-account-circle</v-icon>
+                </v-btn>
 			</v-toolbar-items>
 		</v-app-bar>
 

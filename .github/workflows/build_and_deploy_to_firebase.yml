@@ -36,15 +36,18 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@master
+              uses: actions/checkout@v4
+
             - name: Download Artifact
-              uses: actions/download-artifact@master
+              uses: actions/download-artifact@v4
               with:
                   name: dist
                   path: dist
-            - name: Deploy to Firebase
-              uses: w9jds/firebase-action@master
+
+            - name: Deploy to Firebase Hosting
+              uses: FirebaseExtended/action-hosting-deploy@v0
               with:
-                  args: deploy --only hosting
-              env:
-                  FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+                  repoToken: '${{ secrets.GITHUB_TOKEN }}'
+                  firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUITARBUDDY_BCD3C }}'
+                  channelId: live
+                  projectId: guitarbuddy-bcd3c

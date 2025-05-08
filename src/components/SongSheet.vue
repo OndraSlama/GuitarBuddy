@@ -11,7 +11,6 @@
 						<v-icon>mdi-minus</v-icon>
 					</v-btn>
 					<v-btn text :icon="collapse" class="mx-n2" @click="changeTranspose(-transpose)">
-						<!-- <v-icon left>mdi-format-font-size-increase</v-icon> -->
 						<span v-if="!collapse">Transpose ({{ transpose }})</span>
 						<span v-else>{{ transpose }}</span>
 					</v-btn>
@@ -36,7 +35,6 @@
 						<span v-show="!collapse">Delete</span>
 					</v-btn>
 					<delete-dialog v-model="deleteSongDialogOpened" v-on:accept="deleteSong(currentSong.id)" />
-					<!-- <v-select @click.stop.prevent prepend-icon="mdi-format-size" v-model="currentPreferences.fontSize" :items="fontSizePreferences" label="Font size" solo flat></v-select> -->
 
 					<v-fab-transition>
 						<v-btn large icon @click="fullscreen = !fullscreen">
@@ -126,7 +124,6 @@
 								<v-list-item-icon>
 									<v-icon>mdi-help-circle-outline</v-icon>
 								</v-list-item-icon>
-								<!-- <v-list-item-content> -->
 								<v-row style="height: 50px ">
 									<v-col style="height: 50px; min-width: 150px; flex-grow: 5">
 										Show chord tabs
@@ -135,7 +132,6 @@
 										<v-switch class="my-0 py-0" style="height: 30px; width:50px" @click.stop v-model="currentPreferences.showTabs" inset></v-switch>
 									</v-col>
 								</v-row>
-								<!-- </v-list-item-content> -->
 							</v-list-item>
 
 							<v-divider class="my-1"></v-divider>
@@ -190,7 +186,6 @@
 								<v-btn text large @click="onColumnChange(false)" v-bind="attrs" :color="!currentPreferences.multipleColumns ? 'primary' : ''" v-on="on">
 									<v-icon left>mdi-table-column</v-icon>
 									<span> Standard </span>
-									<!-- <span>Column</span> -->
 								</v-btn>
 							</template>
 							<span>Song in one long column</span>
@@ -201,7 +196,6 @@
 								<v-btn text large @click="onColumnChange(true)" v-bind="attrs" :color="currentPreferences.multipleColumns ? 'primary' : ''" v-on="on" class="mr-n5">
 									<v-icon left>mdi-view-dashboard-outline</v-icon>
 									<span> Dynamic </span>
-									<!-- <span>Dynamic</span> -->
 								</v-btn>
 							</template>
 							<span>Stack song in multiple columns to fit screen</span>
@@ -268,7 +262,6 @@ export default {
 			this.$emit("cancel");
 		},
 		onColumnChange(multipleColumns) {
-			//   this.minFontSize = 9;
 			this.currentPreferences.multipleColumns = multipleColumns;
 			this.dynamicSectionFontSize = this.maxFontSize;
 			this.$nextTick(() => {
@@ -300,26 +293,6 @@ export default {
 			});
 			return textWithChordsAbove + "</span>";
 		},
-
-		// formatSection2(section) {
-		// 	let textWithChordsAbove = "<span class='" + section.name + "'><div class='font-weight-black mb-1'>" + section.name.charAt(0).toUpperCase() + section.name.slice(1) + "</div>";
-		// 	(section.lines || []).forEach((e) => {
-		// 		let chordLine = "";
-		// 		if (e.chords?.length) {
-		// 			e.chords.forEach((ch, i) => {
-		// 				if (i == 0) {
-		// 					chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.transposeChord(ch[1]).symbol + "</span>");
-		// 				} else {
-		// 					chordLine = chordLine.insert(chordLine.length + (ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length)), "<span class='chord'>" + this.transposeChord(ch[1]).symbol + "</span>");
-		// 				}
-		// 			});
-		// 			chordLine += "<br>";
-		// 		}
-		// 		textWithChordsAbove += chordLine + e.lyrics + "<br>";
-		// 	});
-		// 	return textWithChordsAbove + "</span>";
-		// },
-
 		postprocessChord(chord) {
 			let chordSymbol = chord.symbol;
 			if (this.currentPreferences.notation == "German (A H C D E F G)") {
@@ -374,10 +347,6 @@ export default {
 			if (!this.updatingFontSize && overflowDiff < 0) {
 				this.forceOneColumn = true		
 			}
-
-			//   } else {
-			//     this.dynamicSectionFontSize = 16;
-			//   }
 		},
 
 		onResize() {
@@ -428,7 +397,6 @@ export default {
 
 		togglePageScroll(){
 			this.scrollActive = !this.scrollActive;
-			console.log(this.currentPreferences.scrollSpeed);
 			if (this.scrollActive) {
 				this.pageScroll()
 			}			
@@ -440,9 +408,10 @@ export default {
 			}
 
 			window.scrollBy(0, 1);
+			const scrollDelay = this.currentPreferences.scrollSpeed ? (500 - 500 * this.currentPreferences.scrollSpeed / 100) : 250;
 			setTimeout(() => {
 				this.pageScroll();
-			}, 500 - 500*this.currentPreferences.scrollSpeed/100);
+			}, Math.max(50, scrollDelay)); // Ensure delay is not too small
 		}
 	
 	},
@@ -502,7 +471,7 @@ export default {
 		},
 
 		minFontSize() {
-
+			if (!this.currentPreferences || !this.currentPreferences.fontSize) return 12;
 			switch (this.fontSizePreferences.indexOf(this.currentPreferences.fontSize)) {
 				case 0:
 					return 11;
@@ -521,7 +490,7 @@ export default {
 
 		sectionFontSize() {
 			if (!this.currentPreferences.multipleColumns) {
-				return this.minFontSize; //Math.min(Math.max(this.minFontSize, 16), this.dynamicSectionFontSize);
+				return this.minFontSize;
 			} else {
 				return this.dynamicSectionFontSize;
 			}
@@ -548,28 +517,36 @@ export default {
 		window.removeEventListener("resize", this.onResize);
 	},
 	updated() {
-		// if (this.updatingFontSize){
-		// 	this.updateFontSize();
-		// 	console.log("updating font size");
-		// }
 		this.renderTabs();
 	},
 	mounted() {
 		this.currentPreferences = { ...this.preferences };
-		console.log(this.currentPreferences.fontSize);
-		// this.currentPreferences.multipleColumns = !this.viewportSize.xs;
 		this.updateFontSize();
 		this.renderTabs();
 
 		this.snackbar = true;
-		this.vueInsomnia().on();
+		if (typeof this.vueInsomnia === 'function') {
+			this.vueInsomnia().on();
+		}
 	},
 
 	unmounted() {
-		this.vueInsomnia().off();
+		if (typeof this.vueInsomnia === 'function') {
+			this.vueInsomnia().off();
+		}
 	},
 
 	watch: {
+		preferences: {
+			handler(newPrefs) {
+				this.currentPreferences = { ...newPrefs };
+				this.$nextTick(() => {
+					this.updateFontSize();
+					this.renderTabs();
+				});
+			},
+			deep: true,
+		},
 		minFontSize: function() {
 			this.dynamicSectionFontSize = this.maxFontSize;
 			this.$nextTick(() => {
@@ -589,7 +566,6 @@ export default {
 <style lang="scss" scoped>
 .section {
 	display: block;
-	// border: 1px solid blue;
 	white-space: pre;
 	font-family: "Roboto Mono", monospace;
 }
@@ -599,10 +575,8 @@ export default {
 	background-color: rgba(139, 139, 139, 0.082);
 	border-radius: 5px;
 	margin-right: 5px;
-	// border: 1px solid grey;
 	padding: 10px;
 	border-style: dotted;
-	// margin-right: 20px;
 }
 
 .section.dynamic-sections.chorus {
@@ -628,17 +602,11 @@ export default {
 
 .song-sheet {
 	overflow-y: auto;
-	// border: 1px solid green;
-	// align-items: center;
 }
 .song-sheet.dynamic-sections {
-	// border: 1px solid green;
 	display: flex;
 	flex-flow: column wrap;
 	justify-content: space-around;
-	// align-items: center;
-	// align-content: space-around;
-	// max-height: 85vh;
 	
 }
 

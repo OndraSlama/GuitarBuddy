@@ -3,8 +3,8 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"serve": "vue-cli-service serve",
-		"build": "vue-cli-service build",
+        "serve": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service serve",
+        "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service build", 
 		"lint": "vue-cli-service lint"
 	},
 	"dependencies": {
@@ -31,7 +31,7 @@
 		"@vue/cli-plugin-vuex": "~4.5.6",
 		"@vue/cli-service": "~4.5.6",
 		"babel-eslint": "^10.1.0",
-		"eslint": "^7.9.0",
+		"eslint": "^6.8.0",
 		"eslint-plugin-vue": "^6.2.2",
 		"sass": "^1.26.10",
 		"sass-loader": "^10.0.2",
