@@ -932,20 +932,22 @@ export default new Vuex.Store({
             });
         },
 		logout({commit, dispatch}) {
-			return new Promise((resolve, reject) => {
-				firebase
-					.auth()
-					.signOut()
-					.then(() => {
-						dispatch("loadUserDataOff"); 
-						commit("logout"); 
-						resolve();
-					})
-					.catch((err) => {
-						reject(err);
-					});
-			});
-		},
+            return new Promise((resolve, reject) => {
+                firebase
+                    .auth()
+                    .signOut()
+                    .then(() => {
+                        dispatch("loadUserDataOff");
+                        commit("logout");
+                        localStorage.removeItem('lastActiveSessionId');
+                        console.log('lastActiveSessionId removed from localStorage on logout.');
+                        resolve();
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
+            });
+        },
 
 		setUserStatusChange({ commit, dispatch }) {
             return new Promise((resolve) => {
