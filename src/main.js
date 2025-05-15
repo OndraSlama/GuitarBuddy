@@ -12,9 +12,11 @@ import fullscreen from "vue-fullscreen";
 import moment from "moment";
 import vueInsomnia from "vue-insomnia";
 import viewportSize from "./mixins/viewportSize";
+import ShareSessionDialog from "./components/Dialogs/ShareSessionDialog.vue"; 
 
 Vue.prototype.$moment = moment;
 Vue.config.productionTip = false;
+
 
 Vue.use(vueInsomnia);
 Vue.use(fullscreen);
@@ -23,6 +25,7 @@ Vue.component("general-dialog", GeneralDialog);
 Vue.component("delete-dialog", DeleteDialog);
 Vue.component("edit-public-song-dialog", EditPublicSongDialog);
 Vue.component("select-songbook-dialog", SelectSongbookDialog);
+Vue.component("share-session-dialog", ShareSessionDialog);
 
 new Vue({
 	router,

@@ -1,100 +1,60 @@
 <template>
 	<v-container class="align-start pa-sm-4" style="min-width:100%">
-		<!-- Session Information Panel (kompaktnější a jen pro hosta, pokud je to žádoucí) -->
-		<!-- Rozhodl jsem se ho nechat pro oba, ale pro hosta může být méně interaktivní -->
-		<v-card v-if="playSession && !isOwner" class="mb-5 elevation-2 session-info-card-guest rounded-lg">
-			<v-toolbar flat dense color="transparent" height="48">
-				<v-icon color="primary" class="mr-2 ml-1">mdi-information-outline</v-icon>
-				<v-toolbar-title class="text-subtitle-1 font-weight-medium primary--text">
-					Session Info
-				</v-toolbar-title>
-				<v-spacer></v-spacer>
-				<v-chip small :color="connectionStatus.color" dark class="font-weight-bold mr-2">
-					<v-icon left small>{{ connectionStatus.icon }}</v-icon>
+		<!-- Kompaktní Session Info Banner -->
+		<v-card v-if="playSession" class="mb-5 elevation-2 rounded-lg session-banner">
+			<v-toolbar flat dense color="transparent" height="48px">
+				<!-- Levá strana: Status a Info -->
+				<v-chip small :color="connectionStatus.color" dark class="font-weight-bold mr-3 ml-n1" label>
+					<v-icon left small class="mr-1">{{ connectionStatus.icon }}</v-icon>
 					{{ connectionStatus.text }}
 				</v-chip>
-			</v-toolbar>
-			<v-divider v-if="viewportSize.smAndUp"></v-divider>
-			<v-card-text class="pt-2 pb-1" v-if="viewportSize.smAndUp">
-				<v-row dense align="center">
-					<v-col cols="12" sm="4">
-						<div class="text-caption text--secondary">Host</div>
-						<div class="font-weight-medium text-truncate" :title="sessionCreatorName || 'Loading...'">
-							<v-icon small left>mdi-crown-outline</v-icon>
-							{{ sessionCreatorName || "Loading..." }}
-						</div>
-					</v-col>
-					<v-col cols="6" sm="4">
-						<div class="text-caption text--secondary">Time</div>
-						<div class="font-weight-medium">{{ elapsedTime }}</div>
-					</v-col>
-					<v-col cols="6" sm="4">
-						<div class="text-caption text--secondary">Participants</div>
-						<div class="font-weight-medium">
-							<v-icon small left>mdi-account-multiple-outline</v-icon>
-							{{ playSession.connected }}
-						</div>
-					</v-col>
-				</v-row>
-			</v-card-text>
-		</v-card>
 
-		<!-- Panel pro vlastníka session -->
-		<v-card v-if="playSession && isOwner" class="mb-5 elevation-3 session-info-card-owner rounded-lg">
-			<v-toolbar flat dense color="transparent">
-				<v-icon color="primary" class="mr-2">mdi-cogs</v-icon>
-				<v-toolbar-title class="font-weight-medium primary--text">My Session Controls</v-toolbar-title>
-				<v-spacer></v-spacer>
-				<v-chip small :color="connectionStatus.color" dark class="font-weight-bold">
-					<v-icon left small>{{ connectionStatus.icon }}</v-icon>
-					{{ connectionStatus.text }}
-				</v-chip>
-			</v-toolbar>
-			<v-divider></v-divider>
-			<v-card-text class="pt-4">
-				<v-row dense>
-					<v-col cols="12" md="6" lg="4">
-						<div class="text-caption text--secondary">Share this link:</div>
-						<v-text-field
-							:value="sessionLink"
-							readonly
-							dense
-							outlined
-							hide-details
-							append-icon="mdi-content-copy"
-							@click:append="copySessionLink"
-							class="mt-1"
-						></v-text-field>
-					</v-col>
-					<v-col cols="6" sm="4" lg="2">
-						<div class="text-caption text--secondary">Time Elapsed</div>
-						<div class="font-weight-medium">{{ elapsedTime }}</div>
-					</v-col>
-					<v-col cols="6" sm="4" lg="2">
-						<div class="text-caption text--secondary">Participants</div>
-						<div class="font-weight-medium">
-							<v-icon small left>mdi-account-multiple-outline</v-icon>
-							{{ playSession.connected }}
-						</div>
-					</v-col>
-					<v-col cols="12" sm="4" lg="4" class="d-flex align-end justify-end">
-						<v-btn
-							color="error"
-							@click="confirmStopSession"
-							:loading="stoppingSession"
-							depressed
-							rounded
-						>
-							<v-icon left>mdi-stop-circle-outline</v-icon>
-							Stop Session
+				<div v-if="!isOwner" class="text-truncate d-flex align-center">
+					<v-icon small color="grey darken-1" class="mr-1">mdi-account-music-outline</v-icon>
+					<span class="text-caption grey--text text--darken-2 mr-1">Host:</span>
+					<span class="text-subtitle-2 font-weight-medium text--secondary text-truncate" :title="sessionCreatorName || '...'">
+						{{ sessionCreatorName || "Loading..." }}
+					</span>
+				</div>
+
+				<v-spacer v-if="!isOwner"></v-spacer>
+
+				<!-- Střed/Pravá strana pro Majitele -->
+				<template v-if="isOwner">
+					<v-icon small color="primary" class="mr-1">mdi-crown-outline</v-icon>
+					<span class="text-subtitle-2 font-weight-medium primary--text mr-3">My Session</span>
+					<v-spacer></v-spacer>
+					<v-tooltip top>
+						<template v-slot:activator="{ on, attrs }">
+							<v-btn icon small @click="shareDialogOpened = true" v-bind="attrs" v-on="on" class="mr-1">
+								<v-icon color="primary">mdi-share-variant-outline</v-icon>
+							</v-btn>
+						</template>
+						<span>Share Session</span>
+					</v-tooltip>
+				</template>
+
+				<!-- Pravá strana: Čas a Účastníci (pro oba) -->
+				<div class="d-flex align-center text-caption text--secondary ml-auto">
+					<v-icon small class="mr-1">mdi-clock-outline</v-icon>
+					<span class="mr-3">{{ elapsedTime }}</span>
+					<v-icon small class="mr-1">mdi-account-multiple-outline</v-icon>
+					<span>{{ playSession.connected }}</span>
+				</div>
+
+				<!-- Tlačítko Stop pro Majitele (pokud je místo, jinak do menu) -->
+				<v-tooltip top v-if="isOwner">
+					<template v-slot:activator="{ on, attrs }">
+						<v-btn icon small @click="confirmStopSession" :loading="stoppingSession" v-bind="attrs" v-on="on" color="error" class="ml-2">
+							<v-icon>mdi-stop-circle-outline</v-icon>
 						</v-btn>
-					</v-col>
-				</v-row>
-			</v-card-text>
+					</template>
+					<span>Stop Session</span>
+				</v-tooltip>
+			</v-toolbar>
 		</v-card>
 
-
-		<!-- Song Display or Placeholder -->
+		<!-- Song Display or Placeholder (beze změny) -->
 		<v-scroll-x-transition mode="out-in">
 			<song-sheet
 				v-if="songValidAndReady"
@@ -125,8 +85,6 @@
 						</p>
 						<p v-else class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
 							The session host ({{ sessionCreatorName || "..." }}) will select a song soon.
-							<br>
-							<span v-if="elapsedTime !== '00:00'">Session active for: {{ elapsedTime }}</span>
 						</p>
 						<v-progress-circular
 							v-if="!isOwner && !songValid"
@@ -149,19 +107,24 @@
 					</v-col>
 				</v-row>
 			</v-card>
-			<!-- Fallback pokud playSession je null/undefined, ale showSessionPage bylo true (nemělo by se stát) -->
 			<div v-else :key="'no-session-data'" class="text-center mt-10">
 				<v-icon size="60" color="grey">mdi-alert-outline</v-icon>
 				<p class="text-h6 text--secondary mt-4">Loading session data or session not found.</p>
 			</div>
 		</v-scroll-x-transition>
 
+		<!-- Dialogy -->
 		<general-dialog
 			v-model="stopSessionDialog"
 			title="Confirm Stop Session"
 			text="Are you sure you want to end this play session? This will disconnect all participants."
 			acceptButton="Yes, Stop Session"
 			@accept="executeStopSession"
+		/>
+		<share-session-dialog
+			v-if="playSession"
+			v-model="shareDialogOpened"
+			:session-link="sessionLink"
 		/>
 
 		<v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" app bottom right>
@@ -177,17 +140,19 @@
 import { mapGetters, mapActions, mapMutations, mapState } from "vuex";
 import SongSheet from "../components/SongSheet.vue";
 import GeneralDialog from "./Dialogs/GeneralDialog.vue";
+// ShareSessionDialog bude buď globální nebo importován zde
+// import ShareSessionDialog from "./Dialogs/ShareSessionDialog.vue";
 import * as firebase from "firebase/app";
 import 'firebase/database';
-
 
 export default {
 	components: {
 		"song-sheet": SongSheet,
 		GeneralDialog,
+		// ShareSessionDialog, // Pokud není globální
 	},
 	props: {
-		sessionIdFromRoute: { // Přijímáme ID z PlaySession.vue
+		sessionIdFromRoute: {
 			type: String,
 			default: null,
 		}
@@ -199,7 +164,7 @@ export default {
 			intervalId: null,
 			stoppingSession: false,
 			stopSessionDialog: false,
-			sessionCreatorName: null,
+			dataSessionCreatorName: null,
 			snackbar: {
 				show: false,
 				text: "",
@@ -207,7 +172,8 @@ export default {
 			},
 			isOnline: navigator.onLine,
 			dbConnected: false,
-			localSessionId: null, // Lokální ID pro sledování, ke které session jsme připojeni
+			localSessionId: null,
+            shareDialogOpened: false,
 		};
 	},
 	methods: {
@@ -291,21 +257,21 @@ export default {
 				this.elapsedTime = "00:00";
 			}
 		},
-		async fetchSessionCreatorName(creatorId) {
+        async fetchSessionCreatorName(creatorId) { // Přejmenováno data property
 			if (creatorId) {
 				try {
 					const userSnapshot = await firebase.database().ref(`users/${creatorId}`).once('value');
 					if (userSnapshot.exists() && userSnapshot.val().displayName) {
-						this.sessionCreatorName = userSnapshot.val().displayName;
+						this.dataSessionCreatorName = userSnapshot.val().displayName;
 					} else {
-						this.sessionCreatorName = "Host";
+						this.dataSessionCreatorName = "Host";
 					}
 				} catch (error) {
 					console.error("Error fetching session creator name:", error);
-					this.sessionCreatorName = "Host";
+					this.dataSessionCreatorName = "Host";
 				}
 			} else {
-				this.sessionCreatorName = null;
+				this.dataSessionCreatorName = null;
 			}
 		},
 		copySessionLink() {
@@ -334,12 +300,13 @@ export default {
     },
 	},
 	computed: {
-		...mapState({ // Používáme mapState pro přímý přístup k playSession ze store
+		...mapState({
 			playSession: state => state.playSession,
 		}),
 		...mapGetters({
 			user: "getUser",
 			songListLoadingStore: "getSongListLoading",
+			viewportSize: "getViewportSize",
 		}),
 		isOwner() {
 			return this.playSession?.createdBy === this.user?.uid && !!this.user;
@@ -367,6 +334,12 @@ export default {
 				return `${window.location.origin}/play-session/${this.playSession.id}`;
 			}
 			return "";
+		},
+        sessionCreatorName: {
+			// Ponecháno jako data property, která se plní asynchronně
+			// Pokud byste chtěli computed, muselo by to být složitější s Vuex
+			get() { return this.dataSessionCreatorName; },
+			set(val) { this.dataSessionCreatorName = val; }
 		}
 	},
 	watch: {
@@ -434,18 +407,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.session-info-card-guest {
-	border-left: 3px solid var(--v-primary-lighten1);
+.session-banner .v-toolbar__content {
+  padding-left: 8px;
+  padding-right: 8px;
 }
-.session-info-card-owner {
-	border-left: 4px solid var(--v-primary-base);
-}
+
 .text-truncate {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px; // Nebo jiná vhodná šířka
-	display: inline-block; // Aby max-width fungovalo
-	vertical-align: middle; // Pro lepší zarovnání s ikonou
+  max-width: 120px; /* Upravte podle potřeby pro jméno hosta */
+  display: inline-block;
+  vertical-align: bottom; /* Lepší zarovnání s ikonou a textem */
 }
 </style>
