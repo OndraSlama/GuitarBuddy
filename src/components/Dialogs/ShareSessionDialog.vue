@@ -12,7 +12,7 @@
   
         <v-card-text class="pa-6 text-center">
           <p class="text-body-1 mb-4">
-            Invite others to join your session using the link or QR code below.
+            Invite others to join this session using the link or QR code below.
           </p>
   
           <div class="mb-5">

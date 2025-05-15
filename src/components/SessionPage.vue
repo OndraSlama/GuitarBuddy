@@ -9,14 +9,6 @@
 					{{ connectionStatus.text }}
 				</v-chip>
 
-				<div v-if="!isOwner" class="text-truncate d-flex align-center">
-					<v-icon small color="grey darken-1" class="mr-1">mdi-account-music-outline</v-icon>
-					<span class="text-caption grey--text text--darken-2 mr-1">Host:</span>
-					<span class="text-subtitle-2 font-weight-medium text--secondary text-truncate" :title="sessionCreatorName || '...'">
-						{{ sessionCreatorName || "Loading..." }}
-					</span>
-				</div>
-
 				<v-spacer v-if="!isOwner"></v-spacer>
 
 				<!-- Střed/Pravá strana pro Majitele -->
@@ -24,17 +16,17 @@
 					<v-icon small color="primary" class="mr-1">mdi-crown-outline</v-icon>
 					<span class="text-subtitle-2 font-weight-medium primary--text mr-3">My Session</span>
 					<v-spacer></v-spacer>
-					<v-tooltip top>
-						<template v-slot:activator="{ on, attrs }">
-							<v-btn icon small @click="shareDialogOpened = true" v-bind="attrs" v-on="on" class="mr-1">
-								<v-icon color="primary">mdi-share-variant-outline</v-icon>
-							</v-btn>
-						</template>
-						<span>Share Session</span>
-					</v-tooltip>
 				</template>
-
+                
 				<!-- Pravá strana: Čas a Účastníci (pro oba) -->
+                <v-tooltip top>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn icon small @click="shareDialogOpened = true" v-bind="attrs" v-on="on" class="mr-1">
+                            <v-icon color="primary">mdi-share-variant-outline</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>Share Session</span>
+                </v-tooltip>
 				<div class="d-flex align-center text-caption text--secondary ml-auto">
 					<v-icon small class="mr-1">mdi-clock-outline</v-icon>
 					<span class="mr-3">{{ elapsedTime }}</span>
@@ -84,7 +76,7 @@
 							It will instantly appear here for all participants.
 						</p>
 						<p v-else class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
-							The session host ({{ sessionCreatorName || "..." }}) will select a song soon.
+							The session host will select a song soon.
 						</p>
 						<v-progress-circular
 							v-if="!isOwner && !songValid"
@@ -164,7 +156,6 @@ export default {
 			intervalId: null,
 			stoppingSession: false,
 			stopSessionDialog: false,
-			dataSessionCreatorName: null,
 			snackbar: {
 				show: false,
 				text: "",
@@ -257,23 +248,6 @@ export default {
 				this.elapsedTime = "00:00";
 			}
 		},
-        async fetchSessionCreatorName(creatorId) { // Přejmenováno data property
-			if (creatorId) {
-				try {
-					const userSnapshot = await firebase.database().ref(`users/${creatorId}`).once('value');
-					if (userSnapshot.exists() && userSnapshot.val().displayName) {
-						this.dataSessionCreatorName = userSnapshot.val().displayName;
-					} else {
-						this.dataSessionCreatorName = "Host";
-					}
-				} catch (error) {
-					console.error("Error fetching session creator name:", error);
-					this.dataSessionCreatorName = "Host";
-				}
-			} else {
-				this.dataSessionCreatorName = null;
-			}
-		},
 		copySessionLink() {
 			navigator.clipboard.writeText(this.sessionLink).then(() => {
 				this.showSnackbar("Session link copied!", "success");
@@ -334,12 +308,6 @@ export default {
 				return `${window.location.origin}/play-session/${this.playSession.id}`;
 			}
 			return "";
-		},
-        sessionCreatorName: {
-			// Ponecháno jako data property, která se plní asynchronně
-			// Pokud byste chtěli computed, muselo by to být složitější s Vuex
-			get() { return this.dataSessionCreatorName; },
-			set(val) { this.dataSessionCreatorName = val; }
 		}
 	},
 	watch: {
@@ -369,12 +337,6 @@ export default {
 				}
 			},
 			immediate: true
-		},
-		'playSession.createdBy': { // Sledujeme změnu ve Vuex store
-			handler(newCreatorId) {
-				this.fetchSessionCreatorName(newCreatorId);
-			},
-			immediate: true,
 		},
 		'playSession.connected': function(newVal, oldVal) {
 			if (this.isOwner && newVal !== undefined && oldVal !== undefined && this.playSession?.id) {
