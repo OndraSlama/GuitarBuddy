@@ -1,5 +1,5 @@
 <template>
-    <v-container>
+    <v-container fluid>
       <v-row justify="center">
         <v-col cols="12" sm="8" md="6" lg="4">
           <p v-if="willRedirect" class="display-1 text--secondary text-center mb-10">
@@ -146,7 +146,6 @@
               email: this.loginEmail,
               password: this.loginPassword,
             });
-            // Přesměrování se provede ve watch: userLogged
           } catch (error) {
             this.loginError = this.getFriendlyErrorMessage(error);
           } finally {
@@ -167,7 +166,6 @@
               email: this.registerEmail,
               password: this.registerPassword,
             });
-            // Přesměrování se provede ve watch: userLogged
           } catch (error) {
             this.registerError = this.getFriendlyErrorMessage(error);
           } finally {
@@ -176,7 +174,6 @@
         }
       },
       getFriendlyErrorMessage(error) {
-        // Můžete rozšířit o další kódy chyb Firebase
         switch (error.code) {
           case 'auth/invalid-email':
             return 'The email address is not valid.';
