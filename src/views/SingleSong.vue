@@ -4,7 +4,7 @@
 		<v-scroll-x-transition>
 			<song-sheet v-if="!songListLoading && !transitioning && songValid" :song="song"></song-sheet>
 			<div v-if="!songValid && songDoesNotExist" class="d-flex justify-center ">
-				<div class="display-1 mt-5 ">Song does not exist.</div>
+				<div class="display-1 mt-5 ">Song does not exist</div>
 			</div>
 		</v-scroll-x-transition>
 	</div>
@@ -43,7 +43,7 @@ export default {
 					}, 150);
 					setTimeout(() => {
 						this.songDoesNotExist = true;
-					}, 1200);
+					}, 5000);
 				})
 				.catch((e) => {
 					console.log(e);
@@ -80,7 +80,7 @@ export default {
 		this.updateNavigationTitle();
 		setTimeout(() => {
 			this.songDoesNotExist = true;
-		}, 400);
+		}, 5000);
 	},	
 
 	watch: {
