@@ -1,5 +1,5 @@
 <template>
-	<v-container class="align-start pa-sm-4" style="min-width:100%">
+	<v-container fluid class="pa-0 ma-0" style="min-height: 100vh">
 		<!-- Kompaktní Session Info Banner -->
 		<v-card v-if="playSession" class="mb-5 elevation-2 rounded-lg session-banner">
 			<v-toolbar flat dense color="transparent" height="48px">
@@ -43,6 +43,16 @@
 					</template>
 					<span>Stop Session</span>
 				</v-tooltip>
+
+				<!-- Tlačítko Leave pro Účastníky -->
+				<v-tooltip top v-else>
+					<template v-slot:activator="{ on, attrs }">
+						<v-btn icon small @click="confirmLeaveSession" :loading="leavingSession" v-bind="attrs" v-on="on" color="orange" class="ml-2">
+							<v-icon>mdi-exit-to-app</v-icon>
+						</v-btn>
+					</template>
+					<span>Leave Session</span>
+				</v-tooltip>
 			</v-toolbar>
 		</v-card>
 
@@ -72,7 +82,7 @@
 							{{ isOwner ? "Select a Song to Share" : "Waiting for the Host" }}
 						</h2>
 						<p v-if="isOwner" class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
-							Choose a song from your collection or browse public songs.
+							Choose a song from your collection or browse public songs and click on "To Session" button.
 							It will instantly appear here for all participants.
 						</p>
 						<p v-else class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
@@ -112,6 +122,13 @@
 			text="Are you sure you want to end this play session? This will disconnect all participants."
 			acceptButton="Yes, Stop Session"
 			@accept="executeStopSession"
+		/>
+		<general-dialog
+			v-model="leaveSessionDialog"
+			title="Confirm Leave Session"
+			text="Are you sure you want to leave this play session?"
+			acceptButton="Yes, Leave Session"
+			@accept="executeLeaveSession"
 		/>
 		<share-session-dialog
 			v-if="playSession"
@@ -156,6 +173,8 @@ export default {
 			intervalId: null,
 			stoppingSession: false,
 			stopSessionDialog: false,
+			leavingSession: false,
+			leaveSessionDialog: false,
 			snackbar: {
 				show: false,
 				text: "",
@@ -174,7 +193,16 @@ export default {
 		confirmStopSession() {
 			this.stopSessionDialog = true;
 		},
+		confirmLeaveSession() {
+			this.leaveSessionDialog = true;
+		},
 		async initializeSession(sessionId) {
+			// Prevent re-initialization if we're already connected to the same session
+			if (this.localSessionId === sessionId && this.playSession?.id === sessionId) {
+				console.log(`Already connected to session ${sessionId}, skipping initialization`);
+				return;
+			}
+
 			if (this.localSessionId && this.localSessionId !== sessionId) {
 				await this.playSessionOff(this.localSessionId);
 				this.setPlaySession(null);
@@ -183,16 +211,13 @@ export default {
 				try {
 					await this.playSessionOn(sessionId); // Připojí listener a aktualizuje Vuex store
 					this.localSessionId = sessionId;
-					// ULOŽENÍ DO LOCALSTORAGE PO ÚSPĚŠNÉM PŘIPOJENÍ
 					localStorage.setItem('lastActiveSessionId', sessionId);
 					console.log(`Session ${sessionId} saved to localStorage.`);
 				} catch (error) {
 					console.error(`Failed to initialize session ${sessionId}:`, error);
 					this.showSnackbar("Could not connect to the session.", "error");
 					this.setPlaySession(null);
-					// Pokud se nepodaří připojit, můžeme zvážit smazání z localStorage,
-					// aby se uživatel nepokoušel připojit k neplatné session.
-					// localStorage.removeItem('lastActiveSessionId');
+					localStorage.removeItem('lastActiveSessionId');
 				}
 			} else {
 				if (this.localSessionId) {
@@ -200,9 +225,7 @@ export default {
 				}
 				this.localSessionId = null;
 				this.setPlaySession(null);
-				// Při opuštění session (např. když majitel ukončí) můžeme také smazat
-				// localStorage.removeItem('lastActiveSessionId');
-				// Ale je lepší to udělat explicitně při ukončení session majitelem.
+				localStorage.removeItem('lastActiveSessionId');
 			}
 		},
 
@@ -213,18 +236,62 @@ export default {
 				if (this.playSession && this.playSession.id) {
 					const stoppedSessionId = this.playSession.id;
 					await this.stopPlaySession(stoppedSessionId);
-					// SMAZÁNÍ Z LOCALSTORAGE PO UKONČENÍ SESSION
 					const lastSession = localStorage.getItem('lastActiveSessionId');
 					if (lastSession === stoppedSessionId) {
 						localStorage.removeItem('lastActiveSessionId');
 						console.log(`Session ${stoppedSessionId} removed from localStorage after stopping.`);
 					}
 				}
+				// Redirect to /play-session after session is stopped
+				this.$router.push('/play-session');
 			} catch (error) {
 				console.error("Error stopping session:", error);
 				this.showSnackbar("Failed to stop session.", "error");
 			} finally {
 				this.stoppingSession = false;
+			}
+		},
+		async executeLeaveSession() {
+			this.leavingSession = true;
+			this.leaveSessionDialog = false; // Close the dialog
+			try {
+				if (this.localSessionId) {
+					// Disconnect from the session
+					await this.playSessionOff(this.localSessionId);
+					
+					// Remove session from localStorage
+					const lastSession = localStorage.getItem('lastActiveSessionId');
+					if (lastSession === this.localSessionId) {
+						localStorage.removeItem('lastActiveSessionId');
+						console.log(`Session ${this.localSessionId} removed from localStorage after leaving.`);
+					}
+					
+					// Clear local session state
+					this.localSessionId = null;
+					
+					this.showSnackbar("Successfully left the session.", "success");
+					
+					// Redirect to /play-session
+					this.$router.push('/play-session');
+				} else {
+					// If no localSessionId, just clear everything and redirect
+					this.setPlaySession(null);
+					localStorage.removeItem('lastActiveSessionId');
+					this.$router.push('/play-session');
+				}
+			} catch (error) {
+				console.error("Error leaving session:", error);
+				this.showSnackbar("Failed to leave session.", "error");
+				
+				// Even if there's an error, try to clean up local state
+				this.setPlaySession(null);
+				this.localSessionId = null;
+				localStorage.removeItem('lastActiveSessionId');
+				
+				// Still redirect to play-session page
+				this.$router.push('/play-session');
+			} finally {
+				this.leavingSession = false;
 			}
 		},
 		updateElapsedTime() {
