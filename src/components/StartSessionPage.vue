@@ -11,7 +11,7 @@
 					</h1>
 					<p class="text-body-1 text--secondary mb-8">
 						Start a Play Session to share your song choices live with friends or bandmates.
-						Everyone in the session will see the same song sheet in real-time.
+						Everyone in the session will see the same song lyrics in real-time.
 					</p>
 					<v-btn
 						x-large
