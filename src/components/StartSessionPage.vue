@@ -48,17 +48,10 @@ export default {
 			this.$emit("sessionStart");
 			try {
 				await this.$store.dispatch("startPlaySession");
-				// Navigace se provede ve watcheru v PlaySession.vue, když se aktualizuje playSession ve store
-				// this.$router.push("/play-session/" + id);
 			} catch (error) {
 				console.error("Failed to start session:", error);
 				this.$emit("sessionStartFailed");
-				// Zde by se mohla zobrazit notifikace uživateli, např. pomocí snackbaru
 			} finally {
-				// startingSession se může resetovat, pokud by nedošlo k navigaci
-				// ale jelikož navigaci řídí PlaySession.vue na základě store,
-				// tento flag zde nemusí být nutně resetován, pokud vždy dojde k pokusu o změnu stavu.
-				// Pro jistotu ho můžeme resetovat, pokud by akce selhala a zůstali jsme zde.
 				if (!this.$store.state.playSession?.id) { // Kontrola, zda se session skutečně nevytvořila
 					this.startingSession = false;
 				}
