@@ -126,7 +126,6 @@ export default {
 		routeSessionId: {
 			handler: "syncSessionState",
 		},
-		'playSession.id': "syncSessionState",
 	},
 	created() {
 		this.$store.commit("setCurrentPage", "Play Session");
@@ -139,15 +138,6 @@ export default {
     next();
   },
 	beforeRouteLeave(to, from, next) {
-		if (this.playSession && this.isOwner && to.name === "SongSheet" && to.params?.id) {
-			const songToSet = this.$store.getters.getCurrentSong(to.params.id);
-			if (songToSet && songToSet.id !== this.playSession.currentSong?.id) {
-				this.updatePlaySession({
-					...this.playSession,
-					currentSong: songToSet,
-				});
-			}
-		}
 		next();
 	},
 };
