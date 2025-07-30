@@ -47,14 +47,14 @@ export default {
 			this.startingSession = true;
 			this.$emit("sessionStart");
 			try {
-				await this.$store.dispatch("startPlaySession");
+				const sessionId = await this.$store.dispatch("startPlaySession");
+				console.log("Session created with ID:", sessionId);
+				// Redirect to the session page
+				this.$router.push(`/play-session/${sessionId}`);
 			} catch (error) {
 				console.error("Failed to start session:", error);
 				this.$emit("sessionStartFailed");
-			} finally {
-				if (!this.$store.state.playSession?.id) { // Kontrola, zda se session skutečně nevytvořila
-					this.startingSession = false;
-				}
+				this.startingSession = false;
 			}
 		},
 	},
