@@ -164,7 +164,7 @@
 			</v-toolbar>
 			<v-divider></v-divider>
 			<!----------------------------------- Song ----------------------------------->
-			<div class="px-7 py-3">
+			<div class="px-7 py-3 song-container">
 				<v-row v-if="songValid" class="">
 					<v-btn fab class="primary elevation-3" @click="togglePageScroll" fixed :style="{ bottom: viewportSize.mdAndUp ? '40px' : '80px', right: '40px' }" :key="123">
 						<v-icon>{{ scrollActive ?  "mdi-close" : "mdi-arrow-down" }}</v-icon>
@@ -277,21 +277,74 @@ export default {
 		formatSection(section) {
 			let textWithChordsAbove = "<span class='" + section.name + "'><div class='font-weight-black mb-1'>" + section.name.charAt(0).toUpperCase() + section.name.slice(1) + "</div>";
 			(section.lines || []).forEach((e) => {
-				let chordLine = "";
 				if (e.chords?.length) {
-					e.chords.forEach((ch, i) => {
-						if (i == 0) {
-							chordLine = chordLine.insert(ch[0], "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])) + "</span>");
-						} else {
-							let charPos = ch[0] - (e.chords[i - 1][0] + e.chords[i - 1][1].symbol.length);
-							chordLine = chordLine.insert(chordLine.length + (charPos < 1 ? 1 : charPos), "<span class='chord'>" + this.postprocessChord(this.transposeChord(ch[1])) + "</span>");
-						}
-					});
-					chordLine += "<br>";
+					// Create an array to build the line with chord positions
+					let lineWithChords = this.buildLineWithChords(e.lyrics, e.chords);
+					textWithChordsAbove += '<div class="line-with-chords">' + lineWithChords + "</div>";
+				} else {
+					textWithChordsAbove += '<div class="line-without-chords">' + e.lyrics + "</div>";
 				}
-				textWithChordsAbove += chordLine + e.lyrics + "<br>";
 			});
 			return textWithChordsAbove + "</span>";
+		},
+
+		buildLineWithChords(lyrics, chords) {
+			// Sort chords by position to ensure proper order
+			const sortedChords = [...chords].sort((a, b) => a[0] - b[0]);
+			
+			let result = "";
+			let currentPosition = 0;
+			let lastChordEnd = 0;
+			
+			sortedChords.forEach((chord) => {
+				const [position, chordObj] = chord;
+				const chordSymbol = this.postprocessChord(this.transposeChord(chordObj));
+				const chordLength = chordSymbol.length;
+				const minSpacing = chordLength + 1;
+				
+				// Calculate the actual position considering minimum spacing from previous chord
+				let adjustedPosition = Math.max(position, lastChordEnd);
+				
+				// Add text or spaces before chord position
+				const spacesNeeded = adjustedPosition - currentPosition;
+				if (spacesNeeded > 0) {
+					// If we have lyrics text available, use it
+					if (currentPosition < lyrics.length && adjustedPosition <= lyrics.length) {
+						const textToAdd = lyrics.substring(currentPosition, adjustedPosition);
+						result += this.escapeHtml(textToAdd);
+					} else {
+						// If no lyrics or we've passed the end of lyrics, add spaces
+						const availableText = Math.max(0, lyrics.length - currentPosition);
+						if (availableText > 0) {
+							result += this.escapeHtml(lyrics.substring(currentPosition, lyrics.length));
+						}
+						const remainingSpaces = spacesNeeded - availableText;
+						if (remainingSpaces > 0) {
+							result += '&nbsp;'.repeat(remainingSpaces);
+						}
+					}
+				}
+				
+				// Add chord with wrapper
+				result += `<span class="chord-wrapper"><span class="chord">${chordSymbol}</span></span>`;
+				
+				// Update positions
+				currentPosition = adjustedPosition;
+				lastChordEnd = currentPosition + minSpacing;
+			});
+			
+			// Add remaining text
+			if (currentPosition < lyrics.length) {
+				result += this.escapeHtml(lyrics.substring(currentPosition));
+			}
+			
+			return result;
+		},
+
+		escapeHtml(text) {
+			const div = document.createElement('div');
+			div.textContent = text;
+			return div.innerHTML;
 		},
 		postprocessChord(chord) {
 			let chordSymbol = chord.symbol;
@@ -563,11 +616,26 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .section {
 	display: block;
-	white-space: pre;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
 	font-family: "Roboto Mono", monospace;
+	max-width: 100%;
+	overflow-x: hidden;
+	padding-top: 1.5em;
+}
+
+.line-with-chords {
+	line-height: 2.5em;
+	// padding-top: 0em;
+}
+
+.line-without-chords {
+    padding-bottom: 0.4em;
+	line-height: 1.2em;
 }
 
 .section.dynamic-sections {
@@ -577,6 +645,11 @@ export default {
 	margin-right: 5px;
 	padding: 10px;
 	border-style: dotted;
+	max-width: 100%;
+	overflow-x: hidden;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
 }
 
 .section.dynamic-sections.chorus {
@@ -595,6 +668,25 @@ export default {
 	background-color: rgba(133, 2, 194, 0.055);
 }
 
+.chord-wrapper {
+	position: relative;
+	display: inline;
+    font-size: 0.9em;
+    line-height: 0.8;
+}
+
+.chord-wrapper .chord {
+	position: absolute;
+	top: -1.2em;
+	left: 0;
+	white-space: nowrap;
+	z-index: 1;
+	font-size: 0.9em;
+	color: #d32f2f;
+	font-weight: bold;
+	pointer-events: none;
+}
+
 .floating-buttons {
 	position: absolute;
 	right: 20px;
@@ -602,15 +694,23 @@ export default {
 
 .song-sheet {
 	overflow-y: auto;
+	overflow-x: hidden;
+	max-width: 100%;
 }
 .song-sheet.dynamic-sections {
 	display: flex;
 	flex-flow: column wrap;
 	justify-content: space-around;
+    
 	
 }
 
 .no-scroll{
 	max-height: 85vh;	
+}
+
+.song-container {
+	max-width: 100%;
+	overflow-x: hidden;
 }
 </style>
