@@ -26,71 +26,18 @@
 			<v-combobox outlined label="Song Labels" class="mt-n4" v-model="tempSource.labels" :items="labels" hide-selected multiple small-chips> </v-combobox>
 			<!-- <v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field> -->
 
-			<v-textarea outlined rows="20" :class="['text-area', 'pt-3', 'mt-n3', viewportSize.smAndDown ? '' : 'limit-height']" v-model="tempSource.text" label="Song text with chords" :rules="rules" auto-grow></v-textarea>
+			<div class="mt-n3">
+				<chord-text-editor
+					v-model="tempSource.text"
+					:chords-above-text="tempSource.chordsAboveText"
+					:standard-notation="tempSource.standardNotation"
+					@chord-mode-changed="tempSource.chordsAboveText = $event"
+					@notation-changed="tempSource.standardNotation = $event"
+					@trim-lines-changed="tempSource.trimLines = $event"
+				/>
+			</div>
 
 			<v-toolbar class="elevation-0" :color="$vuetify.theme.dark ? '#121212' : ''">
-				<v-tooltip top>
-					<template v-slot:activator="{ on: onTooltip }">
-						<v-menu rounded="large" transition="slide-y-transition" bottom>
-							<template v-slot:activator="{ on: onMenu }">
-								<v-btn icon @click.stop.prevent class="" v-on="{ ...onMenu, ...onTooltip }">
-									<v-icon>mdi-cog-outline</v-icon>
-								</v-btn>
-							</template>
-							<v-list class="py-0">
-								<v-list-item @click.stop="tempSource.chordsAboveText = !tempSource.chordsAboveText">
-									<v-list-item-title class="mr-3">{{ tempSource.chordsAboveText ? "Chords above text" : "Chords in brackets" }}</v-list-item-title>
-									<v-icon class="mr-3" :color="!tempSource.chordsAboveText ? 'primary' : ''">mdi-code-brackets</v-icon>
-									<v-switch @click.stop v-model="tempSource.chordsAboveText" inset color="gray"> </v-switch>
-									<v-icon :color="tempSource.chordsAboveText ? 'primary' : ''">mdi-arrow-up</v-icon>
-									<!-- 
-									<v-list-item-icon>
-										<v-icon>mdi-format-text-variant</v-icon>
-									</v-list-item-icon> -->
-								</v-list-item>
-								<v-list-item @click.stop="tempSource.standardNotation = !tempSource.standardNotation">
-									<v-list-item-title class="mr-3">{{ tempSource.standardNotation ? "Standard notation (A B C D E F G)" : "German notation (A H C D E F G)" }}</v-list-item-title>
-									<v-icon class="mr-1" large :color="!tempSource.standardNotation ? 'primary' : ''">mdi-alpha-h</v-icon>
-									<v-switch @click.stop v-model="tempSource.standardNotation" inset color="gray"> </v-switch>
-									<v-icon large class="mr-n1 ml-n2" :color="tempSource.standardNotation ? 'primary' : ''">mdi-alpha-b</v-icon>
-								</v-list-item>
-							</v-list>
-						</v-menu>
-					</template>
-					<span>Chords settings</span>
-				</v-tooltip>
-
-				<v-tooltip top>
-					<template v-slot:activator="{ on: onMenu }">
-						<v-menu rounded="large" transition="slide-y-transition" bottom>
-							<template v-slot:activator="{ on: onTooltip }">
-								<v-btn icon class="ml-2" large v-on="{ ...onMenu, ...onTooltip }">
-									<v-icon>mdi-playlist-edit</v-icon>
-								</v-btn>
-							</template>
-							<v-list class="py-0">
-								<v-list-item @click.stop.prevent="tempSource.trimLines = !tempSource.trimLines">
-									<v-checkbox v-model="tempSource.trimLines" @click.stop.prevent></v-checkbox>
-									<v-list-item-title>Trim lines</v-list-item-title>
-									<v-list-item-icon>
-										<v-icon>mdi-format-horizontal-align-left</v-icon>
-									</v-list-item-icon>
-								</v-list-item>
-								<v-list-item @click.stop.prevent="variableToFixed" :disabled="!tempSource.chordsAboveText">
-									<v-list-item-title>Fix Chord Alignment (experimental)</v-list-item-title>
-									<v-list-item-icon>
-										<v-icon>mdi-format-align-bottom</v-icon>
-									</v-list-item-icon>
-								</v-list-item>
-								<!-- <v-list-item @click.stop.prevent="fixedToVariable">
-									<v-list-item-title>Fixed width -> Variable width spaces</v-list-item-title>
-                </v-list-item>-->
-							</v-list>
-						</v-menu>
-					</template>
-					<span>Aditional tools</span>
-				</v-tooltip>
-
 				<v-spacer></v-spacer>
 
 				<v-btn v-if="type === 'edit'" @click="$emit('delete')" icon>
@@ -114,6 +61,7 @@ import { mapGetters } from "vuex";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
 import ImageDialog from "../components/Dialogs/ImageDialog";
+import ChordTextEditor from "./ChordTextEditor.vue";
 
 import songParser from "../mixins/songParser";
 export default {
@@ -255,8 +203,8 @@ export default {
 			return this.tempSource !== undefined && this.tempSource !== null;
 		},
 		validInput() {
-			if (this.tempSource.title.length == 0) return false;
-			if (this.tempSource.text.length == 0) return false;
+			if (!this.tempSource.title || this.tempSource.title.length == 0) return false;
+			if (!this.tempSource.text || this.tempSource.text.length == 0) return false;
 			return true;
 		},
 		...mapGetters({
@@ -322,6 +270,7 @@ export default {
 
 	components: {
 		"image-dialog": ImageDialog,
+		"chord-text-editor": ChordTextEditor,
 		// "tooltip-wraper": TooltipWraper,
 	},
 };
