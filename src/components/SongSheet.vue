@@ -205,8 +205,9 @@
 				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
 					<div v-if="currentPreferences.showTabs" class="d-flex flex-wrap">
-						<div v-for="chord in distinctChords" :key="chord.symbol" style="max-width: 100px" class="mr-3">
-							<div :id="chord.symbol"></div>
+						<div v-for="chord in distinctChords" :key="chord.symbol || chord.original" style="max-width: 100px" class="mr-3">
+							<!-- Only show tab diagram for recognized chords, ignore unrecognized ones -->
+							<div v-if="!chord.original" :id="chord.symbol"></div>
 						</div>
 					</div>
 				</v-scroll-y-transition>
@@ -347,7 +348,9 @@ export default {
 			return div.innerHTML;
 		},
 		postprocessChord(chord) {
-			let chordSymbol = chord.symbol;
+			// Handle unrecognized chords that might not have a symbol
+			let chordSymbol = chord.symbol || chord.original || '';
+			
 			if (this.currentPreferences.notation == "German (A H C D E F G)") {
 				chordSymbol = chordSymbol.replace("B", "H");
 				chordSymbol = chordSymbol.replace("A#", "B");
@@ -356,20 +359,42 @@ export default {
 		},
 
 		transposeChord(chord) {
+			// If chord has no symbol or is unrecognized, return it as-is
+			if (!chord.symbol) {
+				return chord;
+			}
+			
 			var scale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-			return Chord.get(
-				chord.symbol.replace(/[CDEFGAB]#?/g, (match) => {
-					let i = (scale.indexOf(match) + this.transpose) % scale.length;
-					return scale[i < 0 ? i + scale.length : i];
-				})
-			);
+			
+			// Try to transpose known chord parts, but keep unrecognized parts intact
+			let transposedSymbol = chord.symbol.replace(/[CDEFGAB]#?/g, (match) => {
+				let i = (scale.indexOf(match) + this.transpose) % scale.length;
+				return scale[i < 0 ? i + scale.length : i];
+			});
+			
+			// Try to get a valid chord object from Tonal
+			let transposedChord = Chord.get(transposedSymbol);
+			
+			// If Tonal can't recognize the chord, create a custom object
+			if (transposedChord.empty) {
+				return {
+					symbol: transposedSymbol,
+					empty: false,
+					original: chord.symbol
+				};
+			}
+			
+			return transposedChord;
 		},
 
 		renderTabs() {
 			if (this.currentPreferences.showTabs && !this.updatingFontSize) {
 				this.distinctChords.forEach((chord) => {
 					try {
-						jtab.render(document.getElementById(chord.symbol), chord.symbol);
+						// Only try to render tabs for chords that Tonal recognizes
+						if (!chord.original && chord.symbol) {
+							jtab.render(document.getElementById(chord.symbol), chord.symbol);
+						}
 					} catch {
 						console.log("");
 					}
@@ -513,7 +538,9 @@ export default {
 				(section.lines ?? []).forEach((line) => {
 					(line.chords ?? []).forEach((chord) => {
 						let transposed = this.transposeChord(chord[1]);
-						if (!chords.map((e) => e.symbol).includes(transposed.symbol)) {
+						// Include chord if it has a symbol or original text
+						let chordSymbol = transposed.symbol || transposed.original || '';
+						if (chordSymbol && !chords.map((e) => e.symbol || e.original || '').includes(chordSymbol)) {
 							chords.push(transposed);
 						}
 					});

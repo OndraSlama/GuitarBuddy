@@ -42,8 +42,18 @@ export default {
 				} else if (chordsAboveText && this.isChordsLine(line)) {
 					lineType = "chords";
 					while ((match = this.aloneChordsregex.exec(line))) {
-						let chord = Chord.get(this.parseChord(match[0]))
-						if (!chord.empty) chords.push([match.index, chord]);
+						let chord = Chord.get(this.parseChord(match[0]));
+						// Include chord even if unrecognized
+						if (!chord.empty) {
+							chords.push([match.index, chord]);
+						} else {
+							// Create custom chord object for unrecognized chords
+							chords.push([match.index, {
+								symbol: match[0],
+								empty: false,
+								original: match[0]
+							}]);
+						}
 					}
 				} else if (!chordsAboveText) {
 					while ((bracketMatch = /\[(.*?)\]/.exec(line))) {
@@ -51,11 +61,29 @@ export default {
 						while ((match = this.chordsInBracketRegex.exec(bracketMatch[1]))) {
 							if (chordsInBracket.length != 0) {
 								let lastChord = chordsInBracket[chordsInBracket.length - 1];
-								let chord = Chord.get(this.parseChord(match[0]))
-								if (!chord.empty) chordsInBracket.push([lastChord[0] + lastChord[1].symbol.length + 1, chord]);
+								let chord = Chord.get(this.parseChord(match[0]));
+								if (!chord.empty) {
+									chordsInBracket.push([lastChord[0] + lastChord[1].symbol.length + 1, chord]);
+								} else {
+									// Create custom chord object for unrecognized chords
+									chordsInBracket.push([lastChord[0] + lastChord[1].symbol.length + 1, {
+										symbol: match[0],
+										empty: false,
+										original: match[0]
+									}]);
+								}
 							} else {
-								let chord = Chord.get(this.parseChord(match[0]))
-								if (!chord.empty) chordsInBracket.push([bracketMatch.index, chord]);
+								let chord = Chord.get(this.parseChord(match[0]));
+								if (!chord.empty) {
+									chordsInBracket.push([bracketMatch.index, chord]);
+								} else {
+									// Create custom chord object for unrecognized chords
+									chordsInBracket.push([bracketMatch.index, {
+										symbol: match[0],
+										empty: false,
+										original: match[0]
+									}]);
+								}
 							}
 						}
 
