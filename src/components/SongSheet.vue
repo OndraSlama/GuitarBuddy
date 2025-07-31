@@ -277,11 +277,15 @@ export default {
 
 		formatSection(section) {
 			let textWithChordsAbove = "<span class='" + section.name + "'><div class='font-weight-black mb-1'>" + section.name.charAt(0).toUpperCase() + section.name.slice(1) + "</div>";
-			(section.lines || []).forEach((e) => {
+			(section.lines || []).forEach((e, index) => {
 				if (e.chords?.length) {
+					// Check if previous line had chords to determine spacing
+					const prevLineHadChords = index > 0 && (section.lines[index - 1].chords?.length > 0);
+					const spacingClass = prevLineHadChords ? 'line-with-chords' : 'line-with-chords first-chord-line';
+					
 					// Create an array to build the line with chord positions
 					let lineWithChords = this.buildLineWithChords(e.lyrics, e.chords);
-					textWithChordsAbove += '<div class="line-with-chords">' + lineWithChords + "</div>";
+					textWithChordsAbove += `<div class="${spacingClass}">` + lineWithChords + "</div>";
 				} else {
 					textWithChordsAbove += '<div class="line-without-chords">' + e.lyrics + "</div>";
 				}
@@ -656,13 +660,17 @@ export default {
 }
 
 .line-with-chords {
-	line-height: 2.5em;
-	// padding-top: 0em;
+	line-height: 2.2em;
+	margin-bottom: 0.3em;
+}
+
+.line-with-chords.first-chord-line {
+	padding-top: 0.5em; /* Add space above only when chord line follows non-chord line */
 }
 
 .line-without-chords {
     padding-bottom: 0.4em;
-	line-height: 1.2em;
+	line-height: 1.1em;
 }
 
 .section.dynamic-sections {
@@ -670,13 +678,22 @@ export default {
 	background-color: rgba(139, 139, 139, 0.082);
 	border-radius: 5px;
 	margin-right: 5px;
-	padding: 10px;
+	padding: 8px 10px 6px 10px;
 	border-style: dotted;
 	max-width: 100%;
 	overflow-x: hidden;
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+}
+
+.section.dynamic-sections .line-with-chords {
+	line-height: 2.3em;
+	margin-bottom: 0.2em;
+}
+
+.section.dynamic-sections .line-without-chords {
+	line-height: 1.1em;
 }
 
 .section.dynamic-sections.chorus {
