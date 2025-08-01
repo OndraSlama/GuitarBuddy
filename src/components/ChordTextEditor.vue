@@ -54,6 +54,15 @@
 				<span>Fix chord alignment (experimental)</span>
 			</v-tooltip>
 			
+			<v-tooltip bottom>
+				<template v-slot:activator="{ on, attrs }">
+					<v-btn icon small @click="convertChordsToChordPro" :disabled="chordMode !== 'above'" v-bind="attrs" v-on="on">
+						<v-icon small>mdi-code-brackets</v-icon>
+					</v-btn>
+				</template>
+				<span>Convert to ChordPro format</span>
+			</v-tooltip>
+			
 			<v-spacer></v-spacer>
 			
 			<!-- Insert Chord Shortcut -->
@@ -370,6 +379,73 @@ export default {
 			if (editor && editor.codemirror) {
 				editor.codemirror.focus();
 			}
+		},
+
+		convertChordsToChordPro() {
+			if (this.chordMode !== 'above') {
+				return; // Only convert if currently in "above" mode
+			}
+
+			let lines = this.content.split(/[\n\r]/);
+			let convertedLines = [];
+			let i = 0;
+
+			while (i < lines.length) {
+				const currentLine = lines[i];
+				
+				if (this.isChordsLine(currentLine) && i + 1 < lines.length) {
+					// This is a chord line, and there's a next line (presumably lyrics)
+					const chordLine = currentLine;
+					const lyricsLine = lines[i + 1] || '';
+					
+					// Find all chords and their positions in the chord line
+					const chords = [];
+					let match;
+					const regex = this.aloneChordsregex;
+					regex.lastIndex = 0; // Reset regex
+					
+					while ((match = regex.exec(chordLine)) !== null) {
+						chords.push({
+							chord: match[0].trim(),
+							position: match.index
+						});
+					}
+					
+					// Start with the lyrics line
+					let convertedLine = lyricsLine;
+					
+					// Insert chords in reverse order to maintain correct positions
+					chords.sort((a, b) => b.position - a.position);
+					
+					chords.forEach(({ chord, position }) => {
+						// Insert chord at the exact same character position
+						if (position <= convertedLine.length) {
+							convertedLine = convertedLine.slice(0, position) + `[${chord}]` + convertedLine.slice(position);
+						} else {
+							// If the position is beyond the lyrics, pad with spaces and add chord
+							const padding = ' '.repeat(position - convertedLine.length);
+							convertedLine = convertedLine + padding + `[${chord}]`;
+						}
+					});
+					
+					convertedLines.push(convertedLine);
+					i += 2; // Skip both the chord line and lyrics line
+				} else {
+					// Regular line (not a chord line or no following lyrics)
+					convertedLines.push(currentLine);
+					i++;
+				}
+			}
+			
+			// Update the content and switch to bracket mode
+			this.content = convertedLines.join('\n');
+			this.chordMode = 'brackets';
+			this.updateEditorContent();
+		},
+
+		// Expose this method to parent components
+		convertToChordPro() {
+			this.convertChordsToChordPro();
 		}
 	},
 
