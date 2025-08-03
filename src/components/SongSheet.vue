@@ -447,49 +447,74 @@ export default {
 			const element = this.$refs.songSheet;
 			if (!element) return;
 
-			let minSize = Math.max(this.minFontSize, 8); // Absolute minimum of 8px
-			let maxSize = Math.min(this.dynamicMaxFontSize, 60); // Dynamic maximum based on viewport
+			let minSize = Math.max(this.minFontSize, 8);
+			let maxSize = Math.min(this.dynamicMaxFontSize, 60);
 			let bestSize = minSize;
 			
-			// Ensure we start with a valid range
-			if (minSize > maxSize) {
-				this.dynamicSectionFontSize = minSize;
-				return;
-			}
+			// Temporarily disable transitions for smooth invisible calculation
+			const originalTransition = element.style.transition;
+			const sections = element.querySelectorAll('.section.dynamic-sections');
+			const originalSectionTransitions = [];
 			
-			// Binary search for optimal font size
-			const maxIterations = 8; // log2(60-8) ≈ 6, so 8 is safe
-			let iterations = 0;
-			
-			while (minSize <= maxSize && iterations < maxIterations) {
-				iterations++;
+			try {
+				// Disable all transitions during calculation
+				element.style.transition = 'none';
+				sections.forEach((section, index) => {
+					originalSectionTransitions[index] = section.style.transition;
+					section.style.transition = 'none';
+				});
 				
-				const testSize = Math.floor((minSize + maxSize) / 2);
-				this.dynamicSectionFontSize = testSize;
+				// Force layout to apply transition changes
+				element.offsetHeight;
 				
-				// Wait for DOM to update after font size change
+				// Ensure we start with a valid range
+				if (minSize > maxSize) {
+					this.dynamicSectionFontSize = minSize;
+					return;
+				}
+				
+				// Binary search for optimal font size using the real element
+				const maxIterations = 8;
+				let iterations = 0;
+				
+				while (minSize <= maxSize && iterations < maxIterations) {
+					iterations++;
+					
+					const testSize = Math.floor((minSize + maxSize) / 2);
+					this.dynamicSectionFontSize = testSize;
+					
+					// Wait for DOM to update
+					await this.$nextTick();
+					
+					// Force layout calculation
+					element.offsetHeight;
+					
+					const hasOverflow = this.checkForOverflow(element);
+					
+					if (hasOverflow) {
+						// Font too large, try smaller
+						maxSize = testSize - 1;
+					} else {
+						// Font size works, save it and try larger
+						bestSize = testSize;
+						minSize = testSize + 1;
+					}
+				}
+				
+				// Set the best size we found
+				this.dynamicSectionFontSize = bestSize;
 				await this.$nextTick();
 				
-				// Give the browser a moment to complete layout calculations
-				await new Promise(resolve => setTimeout(resolve, 10));
-				
-				const hasOverflow = this.checkForOverflow(element);
-				
-				if (hasOverflow) {
-					// Font too large, try smaller
-					maxSize = testSize - 1;
-				} else {
-					// Font size works, save it and try larger
-					bestSize = testSize;
-					minSize = testSize + 1;
-				}
+			} finally {
+				// Always restore transitions
+				element.style.transition = originalTransition;
+				sections.forEach((section, index) => {
+					section.style.transition = originalSectionTransitions[index] || '';
+				});
 			}
 			
-			// Set the best size we found
-			this.dynamicSectionFontSize = bestSize;
+			// Final validation
 			await this.$nextTick();
-			
-			// Final validation - if still overflowing at minimum size, force single column
 			if (bestSize <= this.minFontSize && this.checkForOverflow(element)) {
 				this.forceOneColumn = true;
 			}
@@ -542,7 +567,7 @@ export default {
 					this.dynamicSectionFontSize = this.minFontSize + 4;
 				});
 				this.fontSizeUpdateTimeout = null;
-			}, 150); // Wait 150ms after the last call
+			}, 100); // Reduced to 100ms since we're more efficient now
 		},
 
 		onResize() {
@@ -828,6 +853,9 @@ export default {
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	
+	// Smooth transition only when not calculating
+	transition: font-size 0.15s ease-out;
 }
 
 .section.dynamic-sections .line-with-chords {
