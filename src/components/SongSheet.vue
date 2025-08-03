@@ -248,9 +248,10 @@ export default {
 			snackbar: false,
 			updatingFontSize: false,
 			editPublicSongDialogOpened: false,
-			deleteSongDialogOpened: false,
-			scrollActive: false,
-			fontSizeUpdateTimeout: null,
+			deleteSongDialogOpened: false,			scrollActive: false,
+			scrollAnimationId: null,
+			lastScrollTime: 0,
+		fontSizeUpdateTimeout: null,
 			lastResizeTime: 0,
 		};
 	},
@@ -624,24 +625,46 @@ export default {
 			this.$store.dispatch("deleteSong", songId);
 		},
 
-		togglePageScroll(){
-			this.scrollActive = !this.scrollActive;
-			if (this.scrollActive) {
-				this.pageScroll()
-			}			
-		},
-
-		pageScroll(){
-			if (!this.scrollActive) {
-				return
+	togglePageScroll(){
+		this.scrollActive = !this.scrollActive;
+		if (this.scrollActive) {
+			this.lastScrollTime = performance.now();
+			this.pageScroll();
+		} else {
+			// Cancel any pending animation frame when stopping
+			if (this.scrollAnimationId) {
+				cancelAnimationFrame(this.scrollAnimationId);
+				this.scrollAnimationId = null;
 			}
-
-			window.scrollBy(0, 1);
-			const scrollDelay = this.currentPreferences.scrollSpeed ? (500 - 500 * this.currentPreferences.scrollSpeed / 100) : 250;
-			setTimeout(() => {
-				this.pageScroll();
-			}, Math.max(50, scrollDelay)); // Ensure delay is not too small
 		}
+	},
+
+	pageScroll(){
+		if (!this.scrollActive) {
+			// Cancel animation frame if scrolling was stopped
+			if (this.scrollAnimationId) {
+				cancelAnimationFrame(this.scrollAnimationId);
+				this.scrollAnimationId = null;
+			}
+			return;
+		}
+
+		const currentTime = performance.now();
+		const scrollDelay = this.currentPreferences.scrollSpeed 
+			? (500 - 500 * this.currentPreferences.scrollSpeed / 100) 
+			: 250;
+
+		// Check if enough time has passed since last scroll
+		if (currentTime - this.lastScrollTime >= Math.max(50, scrollDelay)) {
+			window.scrollBy(0, 1);
+			this.lastScrollTime = currentTime;
+		}
+
+		// Schedule next frame
+		this.scrollAnimationId = requestAnimationFrame(() => {
+			this.pageScroll();
+		});
+	}
 	
 	},
 
@@ -762,6 +785,13 @@ export default {
 		if (this.fontSizeUpdateTimeout) {
 			clearTimeout(this.fontSizeUpdateTimeout);
 		}
+		// Cancel any pending scroll animation
+		if (this.scrollAnimationId) {
+			cancelAnimationFrame(this.scrollAnimationId);
+			this.scrollAnimationId = null;
+		}
+		// Stop automatic scrolling when component is destroyed
+		this.scrollActive = false;
 	},
 	updated() {
 		this.renderTabs();
@@ -810,7 +840,35 @@ export default {
 		transpose: function() {
 			// Chord changes might affect layout, recalculate font size
 			this.debouncedUpdateFontSize();
+		},
+
+	// Watch for route changes to stop scrolling
+	'$route'() {
+		this.scrollActive = false;
+		if (this.scrollAnimationId) {
+			cancelAnimationFrame(this.scrollAnimationId);
+			this.scrollAnimationId = null;
 		}
+	},
+
+	// Watch for song changes to stop scrolling
+	'song.id'() {
+		this.scrollActive = false;
+		if (this.scrollAnimationId) {
+			cancelAnimationFrame(this.scrollAnimationId);
+			this.scrollAnimationId = null;
+		}
+	}
+	},
+
+	beforeRouteLeave(to, from, next) {
+		// Stop scrolling when leaving the route
+		this.scrollActive = false;
+		if (this.scrollAnimationId) {
+			cancelAnimationFrame(this.scrollAnimationId);
+			this.scrollAnimationId = null;
+		}
+		next();
 	},
 };
 </script>
