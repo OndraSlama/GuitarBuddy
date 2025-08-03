@@ -234,7 +234,7 @@ export default {
 	data() {
 		return {
 			transpose: 0,
-			dynamicSectionFontSize: 20,
+			dynamicSectionFontSize: 24, // Start with a more conservative size
 			forceOneColumn: false,
 			maxFontSize: 40,
 			currentPreferences: {
@@ -246,10 +246,12 @@ export default {
 			},
 			fullscreen: false,
 			snackbar: false,
-			updatingFontSize: true,
+			updatingFontSize: false,
 			editPublicSongDialogOpened: false,
 			deleteSongDialogOpened: false,
 			scrollActive: false,
+			fontSizeUpdateTimeout: null,
+			lastResizeTime: 0,
 		};
 	},
 
@@ -264,10 +266,19 @@ export default {
 		},
 		onColumnChange(multipleColumns) {
 			this.currentPreferences.multipleColumns = multipleColumns;
-			this.dynamicSectionFontSize = this.maxFontSize;
-			this.$nextTick(() => {
-				this.updateFontSize();
-			});
+			if (multipleColumns) {
+				this.dynamicSectionFontSize = this.dynamicMaxFontSize;
+				this.debouncedUpdateFontSize();
+			}
+		},
+
+		// Reset font size calculation when song content changes
+		resetFontSizeCalculation() {
+			if (this.currentPreferences.multipleColumns) {
+				this.dynamicSectionFontSize = this.dynamicMaxFontSize;
+				this.forceOneColumn = false;
+				this.debouncedUpdateFontSize();
+			}
 		},
 
 		changeTranspose(change) {
@@ -406,36 +417,147 @@ export default {
 			}
 		},
 
-		updateFontSize() {
+		async updateFontSize() {
+			// Only proceed if multiple columns is enabled
 			if (!this.currentPreferences.multipleColumns) {
-				return
+				return;
 			}
-			console.log("updating font size");
-			this.updatingFontSize = false;
+
+			// Prevent multiple simultaneous updates
+			if (this.updatingFontSize) {
+				return;
+			}
+
+			// Check if songSheet element exists
+			if (!this.$refs.songSheet) {
+				return;
+			}
+
+			this.updatingFontSize = true;
 			this.forceOneColumn = false;
-			if (this.$refs.songSheet == undefined) return;
 
-			const width = this.$refs.songSheet.clientWidth;
-			const overflowDiff = width - this.$refs.songSheet.scrollWidth;
-			if (overflowDiff < 0 && this.dynamicSectionFontSize > this.minFontSize) {
-				this.dynamicSectionFontSize -= Math.max(this.dynamicSectionFontSize * 0.08, 1);
-				this.updatingFontSize = true;
-				
-				this.$nextTick(() => {
-					this.updateFontSize();
-				});
-			}
-
-			if (!this.updatingFontSize && overflowDiff < 0) {
-				this.forceOneColumn = true		
+			try {
+				await this.calculateOptimalFontSize();
+			} finally {
+				this.updatingFontSize = false;
 			}
 		},
 
+		async calculateOptimalFontSize() {
+			const element = this.$refs.songSheet;
+			if (!element) return;
+
+			let minSize = Math.max(this.minFontSize, 8); // Absolute minimum of 8px
+			let maxSize = Math.min(this.dynamicMaxFontSize, 60); // Dynamic maximum based on viewport
+			let bestSize = minSize;
+			
+			// Ensure we start with a valid range
+			if (minSize > maxSize) {
+				this.dynamicSectionFontSize = minSize;
+				return;
+			}
+			
+			// Binary search for optimal font size
+			const maxIterations = 8; // log2(60-8) ≈ 6, so 8 is safe
+			let iterations = 0;
+			
+			while (minSize <= maxSize && iterations < maxIterations) {
+				iterations++;
+				
+				const testSize = Math.floor((minSize + maxSize) / 2);
+				this.dynamicSectionFontSize = testSize;
+				
+				// Wait for DOM to update after font size change
+				await this.$nextTick();
+				
+				// Give the browser a moment to complete layout calculations
+				await new Promise(resolve => setTimeout(resolve, 10));
+				
+				const hasOverflow = this.checkForOverflow(element);
+				
+				if (hasOverflow) {
+					// Font too large, try smaller
+					maxSize = testSize - 1;
+				} else {
+					// Font size works, save it and try larger
+					bestSize = testSize;
+					minSize = testSize + 1;
+				}
+			}
+			
+			// Set the best size we found
+			this.dynamicSectionFontSize = bestSize;
+			await this.$nextTick();
+			
+			// Final validation - if still overflowing at minimum size, force single column
+			if (bestSize <= this.minFontSize && this.checkForOverflow(element)) {
+				this.forceOneColumn = true;
+			}
+		},
+
+		checkForOverflow(element) {
+			if (!element) return false;
+			
+			try {
+				const containerWidth = element.clientWidth;
+				const contentWidth = element.scrollWidth;
+				
+				// Add a small tolerance (2px) to account for browser rounding differences
+				const hasHorizontalOverflow = contentWidth > containerWidth + 2;
+				
+				// Check for excessive height that might indicate layout problems
+				const containerHeight = element.clientHeight;
+				const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+				const maxAllowedHeight = Math.min(viewportHeight * 0.85, 1200); // 85vh or 1200px max
+				const hasExcessiveHeight = containerHeight > maxAllowedHeight;
+				
+				// Additional check: ensure content is not extremely wide (indicates layout issue)
+				const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+				const hasExtremeWidth = contentWidth > viewportWidth * 1.5;
+				
+				return hasHorizontalOverflow || hasExcessiveHeight || hasExtremeWidth;
+			} catch (e) {
+				// If any error occurs during measurement, assume no overflow
+				console.warn('Error checking overflow:', e);
+				return false;
+			}
+		},
+
+		debouncedUpdateFontSize() {
+			// Clear any pending font size updates
+			if (this.fontSizeUpdateTimeout) {
+				clearTimeout(this.fontSizeUpdateTimeout);
+			}
+			
+			// Only proceed if multiple columns is enabled
+			if (!this.currentPreferences.multipleColumns) {
+				return;
+			}
+			
+			// Debounce the font size update to prevent excessive calculations
+			this.fontSizeUpdateTimeout = setTimeout(() => {
+				this.updateFontSize().catch(error => {
+					console.warn('Font size update failed:', error);
+					// Fallback: set a reasonable font size
+					this.dynamicSectionFontSize = this.minFontSize + 4;
+				});
+				this.fontSizeUpdateTimeout = null;
+			}, 150); // Wait 150ms after the last call
+		},
+
 		onResize() {
-			this.dynamicSectionFontSize = this.maxFontSize;
-			this.$nextTick(() => {
-				this.updateFontSize();
-			});
+			const now = Date.now();
+			
+			// Throttle resize events to prevent excessive calculations
+			if (now - this.lastResizeTime < 100) {
+				return;
+			}
+			
+			this.lastResizeTime = now;
+			
+			// Reset to calculated max font size and recalculate
+			this.dynamicSectionFontSize = this.dynamicMaxFontSize;
+			this.debouncedUpdateFontSize();
 		},
 
 
@@ -568,6 +690,18 @@ export default {
 			return 12;
 		},
 
+		// Calculate optimal max font size based on viewport
+		dynamicMaxFontSize() {
+			const viewportWidth = window.innerWidth || 1200;
+			const viewportHeight = window.innerHeight || 800;
+			
+			// Scale max font size based on viewport size
+			const baseMaxSize = 40;
+			const scaleFactor = Math.min(viewportWidth / 1200, viewportHeight / 800);
+			
+			return Math.floor(Math.max(this.minFontSize + 8, baseMaxSize * scaleFactor));
+		},
+
 		songSections() {
 			return this.song.sections;
 		},
@@ -599,13 +733,17 @@ export default {
 	},
 	destroyed() {
 		window.removeEventListener("resize", this.onResize);
+		// Clean up any pending timeouts
+		if (this.fontSizeUpdateTimeout) {
+			clearTimeout(this.fontSizeUpdateTimeout);
+		}
 	},
 	updated() {
 		this.renderTabs();
 	},
 	mounted() {
 		this.currentPreferences = { ...this.preferences };
-		this.updateFontSize();
+		this.debouncedUpdateFontSize();
 		this.renderTabs();
 
 		this.snackbar = true;
@@ -625,24 +763,29 @@ export default {
 			handler(newPrefs) {
 				this.currentPreferences = { ...newPrefs };
 				this.$nextTick(() => {
-					this.updateFontSize();
+					this.debouncedUpdateFontSize();
 					this.renderTabs();
 				});
 			},
 			deep: true,
 		},
 		minFontSize: function() {
-			this.dynamicSectionFontSize = this.maxFontSize;
-			this.$nextTick(() => {
-				this.updateFontSize();
-			});
+			this.resetFontSizeCalculation();
 		},
 		expanded: function() {
-			this.dynamicSectionFontSize = this.maxFontSize;
-			this.$nextTick(() => {
-				this.updateFontSize();
-			});
+			this.resetFontSizeCalculation();
 		},
+		// Watch for changes in song content that might affect layout
+		'song.sections': {
+			handler() {
+				this.resetFontSizeCalculation();
+			},
+			deep: true
+		},
+		transpose: function() {
+			// Chord changes might affect layout, recalculate font size
+			this.debouncedUpdateFontSize();
+		}
 	},
 };
 </script>
