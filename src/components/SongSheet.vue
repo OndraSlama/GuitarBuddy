@@ -164,8 +164,8 @@
 			</v-toolbar>
 			<v-divider></v-divider>
 			<!----------------------------------- Song ----------------------------------->
-			<div class="px-7 py-3 song-container">
-				<v-row v-if="songValid" class="">
+			<div class="py-3 song-container">
+				<v-row v-if="songValid" class="px-7">
 					<v-btn fab class="primary elevation-3" @click="togglePageScroll" fixed :style="{ bottom: viewportSize.mdAndUp ? '40px' : '80px', right: '40px' }" :key="123">
 						<v-icon>{{ scrollActive ?  "mdi-close" : "mdi-arrow-down" }}</v-icon>
 					</v-btn>
@@ -204,7 +204,7 @@
 				</v-row>
 				<!----------------------------------- Chord pictures ----------------------------------->
 				<v-scroll-y-transition hide-on-leave>
-					<div v-if="currentPreferences.showTabs" class="d-flex flex-wrap">
+					<div v-if="currentPreferences.showTabs" class="d-flex flex-wrap" :class="viewportSize.smAndDown ? 'px-2' : 'px-7'">
 						<div v-for="chord in distinctChords" :key="chord.symbol || chord.original" style="max-width: 100px" class="mr-3">
 							<!-- Only show tab diagram for recognized chords, ignore unrecognized ones -->
 							<div v-if="!chord.original" :id="chord.symbol"></div>
@@ -212,7 +212,7 @@
 					</div>
 				</v-scroll-y-transition>
 				<!----------------------------------- Song text ----------------------------------->
-				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', ...sectionClasses]" ref="songSheet">
+				<div v-if="songValid && song.sections.length > 0" :class="['text--primary', 'song-sheet', 'mt-3', viewportSize.smAndDown ? 'px-2' : 'px-7', ...sectionClasses]" ref="songSheet">
 					<v-card :class="['mb-3 ', 'section', 'elevation-0', 'no-scroll', section.name.toLowerCase(), ...sectionClasses]" :style="{ 'font-size': sectionFontSize + 'px' }" @keydown="dynamicSectionFontSize = maxFontSize" v-for="(section, i) in songSections" :key="i">
 						<v-divider v-if="!currentPreferences.multipleColumns && i > 0" class="mb-3"></v-divider>
 						<div v-html="formatSection(section)"></div>
@@ -677,6 +677,12 @@ export default {
 					classes.push("no-scroll");
 				}
 			}
+
+			// Add class for large text to reduce chord prominence and line height
+			if (this.sectionFontSize > 13) {
+				classes.push("large-text");
+			}
+
 			return classes
 		},
 
@@ -744,10 +750,10 @@ export default {
 			const viewportHeight = window.innerHeight || 800;
 			
 			// Scale max font size based on viewport size
-			const baseMaxSize = 40;
+			const baseMaxSize = 60;
 			const scaleFactor = Math.min(viewportWidth / 1200, viewportHeight / 800);
 			
-			return Math.floor(Math.max(this.minFontSize + 8, baseMaxSize * scaleFactor));
+			return Math.floor(Math.max(this.minFontSize + 10, baseMaxSize * scaleFactor));
 		},
 
 		songSections() {
@@ -886,8 +892,8 @@ export default {
 }
 
 .line-with-chords {
-	line-height: 2.2em;
-	margin-bottom: 0.3em;
+	line-height: 2.4em;
+	margin-bottom: 0.4em;
 }
 
 .line-with-chords.first-chord-line {
@@ -904,7 +910,7 @@ export default {
 	background-color: rgba(139, 139, 139, 0.082);
 	border-radius: 5px;
 	margin-right: 5px;
-	padding: 8px 10px 6px 10px;
+	padding: 4px 6px 3px 6px;
 	border-style: dotted;
 	max-width: 100%;
 	overflow-x: hidden;
@@ -917,7 +923,7 @@ export default {
 }
 
 .section.dynamic-sections .line-with-chords {
-	line-height: 2.3em;
+	line-height: 2.5em;
 	margin-bottom: 0.2em;
 }
 
@@ -950,14 +956,26 @@ export default {
 
 .chord-wrapper .chord {
 	position: absolute;
-	top: -1.2em;
+	top: -1.1em;
 	left: 0;
 	white-space: nowrap;
 	z-index: 1;
-	font-size: 0.9em;
+	font-size: 1.15em;
 	color: #d32f2f;
-	font-weight: bold;
+	font-weight: 900;
 	pointer-events: none;
+}
+
+/* Reduce chord prominence when font is large enough */
+.section.large-text .chord-wrapper .chord {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+/* Reduce line height when font is large (and chords are smaller) */
+.section.large-text .line-with-chords,
+.section.dynamic-sections.large-text .line-with-chords {
+    line-height: 2.2em;
 }
 
 .floating-buttons {
