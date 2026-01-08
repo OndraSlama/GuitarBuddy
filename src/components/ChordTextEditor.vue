@@ -471,22 +471,26 @@ export default {
 
 <style lang="scss" scoped>
 .chord-text-editor {
-	border: 1px solid #ccc;
-	border-radius: 4px;
+	/* Border handled by parent */
+	/* border: 1px solid #ccc; */
+	/* border-radius: 4px; */
 	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }
 
 .theme--dark .chord-text-editor {
-	border-color: #555;
+	/* border-color: #555; */
 }
 
 .editor-toolbar {
 	display: flex;
 	align-items: center;
-	padding: 12px 16px;
+	padding: 8px 16px;
 	background: rgba(0, 0, 0, 0.04);
 	border-bottom: 1px solid #eee;
-	min-height: 56px;
+	min-height: 48px;
 }
 
 .theme--dark .editor-toolbar {
@@ -495,13 +499,19 @@ export default {
 }
 
 .editor-container {
-	min-height: 300px;
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+    position: relative;
+    overflow: hidden; 
 }
 
 .editor-helper {
-	padding: 8px 16px;
+	padding: 4px 16px;
 	border-top: 1px solid #eee;
 	background: rgba(0, 0, 0, 0.02);
+	font-size: 0.75rem;
 }
 
 .theme--dark .editor-helper {
@@ -514,14 +524,15 @@ export default {
 	border: none !important;
 	font-family: "Roboto Mono", monospace !important;
 	font-size: 14px !important;
-	line-height: 1.3 !important;
-	height: auto !important;
-	min-height: 300px !important;
+	line-height: 1.5 !important;
+	height: 100% !important; 
+    min-height: 300px;
 	background: transparent !important;
 }
 
 ::v-deep .CodeMirror-scroll {
-	min-height: 300px !important;
+    padding-bottom: 30px;
+	min-height: 100% !important;
 }
 
 ::v-deep .CodeMirror-lines {

@@ -1,58 +1,103 @@
 <template>
-	<div>
-		<v-form @submit.prevent="onSubmit" ref="form" lazy-validation>
+	<v-container fluid class="pa-0 fill-height align-start">
+		<v-form @submit.prevent="onSubmit" ref="form" lazy-validation class="d-flex flex-column flex-grow-1" style="width: 100%">
 			<image-dialog v-model="helpOpened" imagePath="https://firebasestorage.googleapis.com/v0/b/guitarbuddy-bcd3c.appspot.com/o/songEditorHelp.png?alt=media&token=3bb9508f-e6e5-4888-806a-cacf8a176020"></image-dialog>
-			<v-toolbar class="elevation-0 mb-2" height="40px" :color="$vuetify.theme.dark ? '#121212' : ''">
-				<v-toolbar-items>
-					<v-btn icon class="ml-n4" @click="$emit('back')">
+			
+            <div v-if="tempSource">
+                <!-- Header Actions -->
+                <div class="d-flex align-center mb-2">
+                     <v-btn icon @click="$emit('back')" class="mr-2">
 						<v-icon>mdi-arrow-left</v-icon>
 					</v-btn>
-				</v-toolbar-items>
-				<v-spacer></v-spacer>
-				<v-toolbar-items>
-					<v-switch class="mt-2" v-model="tempSource.public" inset label="Public"></v-switch>
-					<v-tooltip top>
-						<template v-slot:activator="{ on, attrs }">
-							<v-btn icon class="mr-n5" @click="helpOpened = true" v-bind="attrs" v-on="on">
-								<v-icon>mdi-help-circle-outline</v-icon>
-							</v-btn>
-						</template>
-						<span>Show help overlay</span>
-					</v-tooltip>
-				</v-toolbar-items>
-			</v-toolbar>
-			<v-text-field class="mb-3" v-model="tempSource.title" label="Song Title" :rules="rules" hide-details="auto" outlined></v-text-field>
-			<v-combobox outlined label="Author" v-model="tempSource.author" :items="authors"></v-combobox>
-			<v-combobox outlined label="Song Labels" class="mt-n4" v-model="tempSource.labels" :items="labels" hide-selected multiple small-chips> </v-combobox>
-			<!-- <v-text-field v-model="tempSource.author" label="Author" outlined></v-text-field> -->
+                    <div class="text-h6 font-weight-bold">
+                        {{ type === 'add' ? 'New Song' : 'Edit Song' }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <div class="d-flex align-center">
+                        <v-switch v-model="tempSource.public" inset dense hide-details class="mt-0 mr-4" label="Public"></v-switch>
+                        <v-tooltip bottom>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-btn icon @click="helpOpened = true" v-bind="attrs" v-on="on">
+                                    <v-icon>mdi-help-circle-outline</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Show help</span>
+                        </v-tooltip>
+                    </div>
+                </div>
 
-			<div class="mt-n3">
-				<chord-text-editor
-					v-model="tempSource.text"
-					:chords-above-text="tempSource.chordsAboveText"
-					:standard-notation="tempSource.standardNotation"
-					@chord-mode-changed="tempSource.chordsAboveText = $event"
-					@notation-changed="tempSource.standardNotation = $event"
-					@trim-lines-changed="tempSource.trimLines = $event"
-				/>
-			</div>
+                <!-- Metadata Card -->
+                <v-card outlined class="mb-4 rounded-lg overflow-hidden elevation-1 border-light">
+                    <v-card-text class="pa-4">
+                        <v-text-field 
+                            v-model="tempSource.title" 
+                            placeholder="Song Title" 
+                            class="text-h5 font-weight-bold mb-2" 
+                            :rules="rules" 
+                            hide-details="auto" 
+                            solo 
+                            flat 
+                            background-color="transparent"
+                        ></v-text-field>
+                        <v-divider class="mb-4"></v-divider>
+                        <v-row dense>
+                            <v-col cols="12" sm="6">
+                                <v-combobox 
+                                    dense 
+                                    outlined 
+                                    label="Author" 
+                                    v-model="tempSource.author" 
+                                    :items="authors"
+                                    hide-details
+                                    prepend-inner-icon="mdi-account"
+                                ></v-combobox>
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                                <v-combobox 
+                                    dense 
+                                    outlined 
+                                    label="Tags" 
+                                    v-model="tempSource.labels" 
+                                    :items="labels" 
+                                    hide-selected 
+                                    multiple 
+                                    small-chips 
+                                    hide-details
+                                    prepend-inner-icon="mdi-tag-multiple"
+                                ></v-combobox>
+                            </v-col>
+                        </v-row>
+                    </v-card-text>
+                </v-card>
 
-			<v-toolbar class="elevation-0" :color="$vuetify.theme.dark ? '#121212' : ''">
-				<v-spacer></v-spacer>
+                <!-- Editor Card -->
+                <v-card outlined class="rounded-lg d-flex flex-column flex-grow-1 mb-4 elevation-1 border-light" style="min-height: 500px;">
+                    <chord-text-editor
+                        v-model="tempSource.text"
+                        :chords-above-text="tempSource.chordsAboveText"
+                        :standard-notation="tempSource.standardNotation"
+                        @chord-mode-changed="tempSource.chordsAboveText = $event"
+                        @notation-changed="tempSource.standardNotation = $event"
+                        @trim-lines-changed="tempSource.trimLines = $event"
+                        class="flex-grow-1"
+                    />
+                </v-card>
 
-				<v-btn v-if="type === 'edit'" @click="$emit('delete')" icon>
-					<v-icon>mdi-delete-outline</v-icon>
-				</v-btn>
-				<v-btn @click="reset" icon>
-					<v-icon>mdi-cancel</v-icon>
-				</v-btn>
-				<v-btn fab type="submit" class="ml-2 mr-n4" color="primary" :disabled="!validInput || !userLogged">
-					<v-icon v-if="type === 'add'">mdi-upload-outline</v-icon>
-					<v-icon v-if="type === 'edit'">mdi-content-save-outline</v-icon>
-				</v-btn>
-			</v-toolbar>
+                <!-- Footer Actions -->
+                <div class="d-flex align-center pb-4">
+                     <v-btn v-if="type === 'edit'" @click="$emit('delete')" color="error" text large>
+                        <v-icon left>mdi-delete-outline</v-icon> Delete
+					</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn text @click="reset" large class="mr-2">Cancel</v-btn>
+                    <v-btn depressed color="primary" type="submit" :disabled="!validInput || !userLogged" large>
+                         <v-icon left>{{ type === 'add' ? 'mdi-plus' : 'mdi-content-save' }}</v-icon>
+                         {{ type === 'add' ? 'Create Song' : 'Save Changes' }}
+                    </v-btn>
+                </div>
+            </div>
 		</v-form>
-	</div>
+	</v-container>
 </template>
 
 <script>

@@ -2,7 +2,7 @@
 	<div class="mt-0">
 		<!-- <p class="text-h3 text--secondary text-start font-weight-light text-sm-h2 mb-6">Add new song</p> -->
 		<v-row>
-			<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 4" style="position: relative">
+			<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 6" style="position: relative">
 				<song-editor v-on:song-submited="addSong" v-on:input="formatedSong = $event" v-on:back="$router.push('/')" type="add"> </song-editor>
 				<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
 					<v-icon v-if="expanded">mdi-chevron-left</v-icon>
@@ -10,7 +10,7 @@
 				</v-btn>
 			</v-col>
 			<v-divider class="hidden-md-and-up"></v-divider>
-			<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 8" class="pl-md-9">
+			<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 6" class="pl-md-9">
 				<v-scroll-y-transition hide-on-leave>
 					<song-sheet v-if="showSongSheet" :expanded="expanded" :song="formatedSong"></song-sheet>
 				</v-scroll-y-transition>
