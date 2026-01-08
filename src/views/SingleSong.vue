@@ -35,6 +35,9 @@ export default {
 			this.$store.dispatch("loadSong", id)
 				.then((song) => {
 					this.song = song;
+					if (this.userLogged && this.$store.getters.getCurrentSong(song.id)) {
+						this.$store.dispatch("updateLastViewed", song.id);
+					}
 					this.updateNavigationTitle();
 					this.transitioning = true;
 					this.songDoesNotExist = false;
@@ -62,6 +65,7 @@ export default {
 
 		...mapGetters({
 			songListLoading: "getSongListLoading",
+			userLogged: "getUserLogged",
 		}),
 	},
 	components: {

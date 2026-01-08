@@ -43,6 +43,16 @@
 									<v-icon v-show="!filters.authorNameOrder" :disabled="filters.groupBy == 'author'" :color="filters.orderBy == 'authorName' ? 'primary' : ''">mdi-chevron-down</v-icon>
 								</v-list-item-icon>
 							</v-list-item>
+							<v-list-item @click.stop="onLastViewed">
+								<v-list-item-icon>
+									<v-icon :color="filters.orderBy == 'lastViewed' ? 'primary' : ''">mdi-eye-outline</v-icon>
+								</v-list-item-icon>
+								<v-list-item-title>Last Viewed</v-list-item-title>
+								<v-list-item-icon v-show="filters.orderBy == 'lastViewed'">
+									<v-icon v-show="filters.lastViewedOrder" :color="filters.orderBy == 'lastViewed' ? 'primary' : ''">mdi-chevron-down</v-icon>
+									<v-icon v-show="!filters.lastViewedOrder" :color="filters.orderBy == 'lastViewed' ? 'primary' : ''">mdi-chevron-up</v-icon>
+								</v-list-item-icon>
+							</v-list-item>
 							<v-list-item @click.stop="onDateModified">
 								<v-list-item-icon>
 									<v-icon :color="filters.orderBy == 'dateModified' ? 'primary' : ''">mdi-calendar-edit</v-icon>

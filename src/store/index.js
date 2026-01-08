@@ -140,6 +140,7 @@ export default new Vuex.Store({
 					const authorNameOrder = filters.authorNameOrder ? normalizeString(a.author) < normalizeString(b.author) : normalizeString(a.author) > normalizeString(b.author);
 					const dateModifiedOrder = filters.modifiedDateOrder ? normalizeString(a.modifiedAt) < normalizeString(b.modifiedAt) : normalizeString(a.modifiedAt) > normalizeString(b.modifiedAt);
 					const dateCreatedOrder = filters.createdDateOrder ? normalizeString(a.createdAt) < normalizeString(b.createdAt) : normalizeString(a.createdAt) > normalizeString(b.createdAt);
+					const lastViewedOrder = filters.lastViewedOrder ? normalizeString(a.lastViewed ?? "") < normalizeString(b.lastViewed ?? "") : normalizeString(a.lastViewed ?? "") > normalizeString(b.lastViewed ?? "");
 					const forksOrder = filters.forksOrder ? (a.forks ?? 0) > (b.forks ?? 0) : (a.forks ?? 0) < (b.forks ?? 0);
 					if (filters.orderBy == "authorName") {
 						return authorNameOrder ? 1 : -1;
@@ -149,6 +150,11 @@ export default new Vuex.Store({
 					}
 					if (filters.orderBy == "dateCreated") {
 						return dateCreatedOrder ? 1 : -1;
+					}
+					if (filters.orderBy == "lastViewed") {
+						if ((a.lastViewed ?? "") !== (b.lastViewed ?? "")){
+							return lastViewedOrder ? 1 : -1;
+						}
 					}
 					if (filters.orderBy == "forks") {
 						return forksOrder ? 1 : -1;
@@ -788,6 +794,15 @@ export default new Vuex.Store({
 					.database()
 					.ref("users/" + getters.getUser.uid + "/songs/" + payload.id)
 					.update({ favourite: payload.value });
+			}
+		},
+
+		updateLastViewed({ getters }, payload){
+			if (getters.getUserLogged) {
+				firebase
+					.database()
+					.ref("users/" + getters.getUser.uid + "/songs/" + payload)
+					.update({ lastViewed: new Date().toISOString() });
 			}
 		},
 

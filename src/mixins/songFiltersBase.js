@@ -8,8 +8,9 @@ export default {
 				authorNameOrder: false,
 				modifiedDateOrder: true,
 				createdDateOrder: true,
+				lastViewedOrder: true,
 				forksOrder: false,
-				orderBy: "dateModified",
+				orderBy: "lastViewed",
 				orderGroupBy: "name",
 				groupNameOrder: false,
 				groupSizeOrder: false,
@@ -37,6 +38,11 @@ export default {
 		onDateCreated() {
 			this.filters.createdDateOrder = this.filters.orderBy == 'dateCreated' ? !this.filters.createdDateOrder : true;
 			this.filters.orderBy = 'dateCreated';
+		},
+
+		onLastViewed() {
+			this.filters.lastViewedOrder = this.filters.orderBy == 'lastViewed' ? !this.filters.lastViewedOrder : true;
+			this.filters.orderBy = 'lastViewed';
 		},
 
 		onForks() {
