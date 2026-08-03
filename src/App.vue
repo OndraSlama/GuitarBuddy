@@ -3,18 +3,20 @@
 		<nav-bar></nav-bar>
 		<song-list></song-list>
 		<v-main class="pt-0">
-			<v-scroll-y-transition hide-on-leave>
-				<router-view class="mt-15 pa-sm-5 pa-0 ma-0"></router-view>
-			</v-scroll-y-transition>
+			<router-view v-slot="{ Component }">
+				<v-scroll-y-transition hide-on-leave>
+					<component :is="Component" class="mt-15 pa-sm-5 pa-0 ma-0"></component>
+				</v-scroll-y-transition>
+			</router-view>
 		</v-main>
 		<app-footer></app-footer>
 	</v-app>
 </template>
 
 <script>
-import NavBar from "../src/components/NavBar";
-import Footer from "../src/components/Footer";
-import SongList from "../src/components/SongList";
+import NavBar from "../src/components/NavBar.vue";
+import Footer from "../src/components/Footer.vue";
+import SongList from "../src/components/SongList.vue";
 export default {
 	name: "App",
 
@@ -29,12 +31,9 @@ export default {
 	}),
 	computed: {
 		scrollbarTheme() {
-			return this.$vuetify.theme.dark ? "dark" : "light";
+			return this.$vuetify.theme.current.dark ? "dark" : "light";
 		},
 	},
-	// mounted() {
-	// 	this.$store.dispatch("loadPublicSongs");
-	// },
 };
 </script>
 
@@ -45,24 +44,6 @@ export default {
 .chord {
 	color: rgb(255, 92, 92);
 }
-/* .verse {
-	color: rgb(156, 156, 156);
-} */
-/* .chorus {
-	color: rgb(116, 124, 38);
-}
-.bridge {
-	color: rgb(79, 93, 155);
-} */
-/* .verse .name {
-	color: rgb(156, 156, 156);
-}
-.chorus .name {
-	color: rgb(50, 104, 12);
-}
-.bridge .name {
-	color: rgb(92, 102, 134);
-} */
 .thin-border {
 	border: 1px solid rgb(104, 104, 104);
 }

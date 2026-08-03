@@ -1,10 +1,9 @@
 <template>
 	<div class="mt-0">
-		<!-- <p class="text-h3 text--secondary text-start font-weight-light text-sm-h2 mb-6">Add new song</p> -->
 		<v-row>
 			<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 6" style="position: relative">
-				<song-editor v-on:song-submited="addSong" v-on:input="formatedSong = $event" v-on:back="$router.push('/')" type="add"> </song-editor>
-				<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
+			<song-editor v-on:song-submited="addSong" v-on:input="formatedSong = $event" v-on:back="$router.push('/')" type="add"> </song-editor>
+				<v-btn size="x-large" icon variant="text" color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
 					<v-icon v-if="expanded">mdi-chevron-left</v-icon>
 					<v-icon v-else>mdi-chevron-right</v-icon>
 				</v-btn>
@@ -17,7 +16,6 @@
 				<v-scroll-y-transition hide-on-leave>
 					<div v-if="!showSongSheet" style="height:80vh" class="d-flex justify-center align-center">
 						<import-songs></import-songs>
-						<!-- </div> -->
 					</div>
 				</v-scroll-y-transition>
 			</v-col>
@@ -27,9 +25,9 @@
 </template>
 
 <script>
-import SongSheet from "../components/SongSheet";
-import SongEditor from "../components/SongEditor";
-import ImportSongs from "../components/Others/ImportSongs";
+import SongSheet from "../components/SongSheet.vue";
+import SongEditor from "../components/SongEditor.vue";
+import ImportSongs from "../components/Others/ImportSongs.vue";
 import { mapGetters } from "vuex";
 
 export default {

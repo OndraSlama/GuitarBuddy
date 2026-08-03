@@ -1,5 +1,5 @@
 <template>
-	<v-container fill-height class="justify-center pa-0" style="min-width:100%" fluid>
+	<v-container class="fill-height justify-center pa-0" style="min-width:100%" fluid>
 		<v-fade-transition mode="out-in">
 			<div v-if="loadingInitialState" key="loading" class="fill-height d-flex justify-center align-center">
 				<v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
@@ -20,8 +20,8 @@
 			<div v-else-if="!loadingInitialState && routeSessionId && !playSession" key="notfound-explicit" class="fill-height d-flex flex-column justify-center align-center text-center pa-4">
 				<v-icon size="80" color="warning" class="mb-4">mdi-link-off</v-icon>
 				<h2 class="text-h5 mb-2">Session Invalid or Ended</h2>
-				<p class="text-body-1 text--secondary">The session link you used is no longer valid or the session has ended.</p>
-				<v-btn color="primary" to="/play-session" class="mt-4" rounded depressed>
+				<p class="text-body-1 text-medium-emphasis">The session link you used is no longer valid or the session has ended.</p>
+				<v-btn color="primary" to="/play-session" class="mt-4" rounded variant="flat">
 					Go to Play Sessions
 				</v-btn>
 			</div>
@@ -29,8 +29,8 @@
 				<!-- Tento fallback by se neměl často zobrazovat, pokud logika výše funguje správně -->
 				<v-icon size="80" color="grey" class="mb-4">mdi-help-circle-outline</v-icon>
 				<h2 class="text-h5 mb-2">Something went wrong</h2>
-				<p class="text-body-1 text--secondary">Please try again or start a new session.</p>
-				<v-btn color="primary" to="/play-session" class="mt-4" rounded depressed>
+				<p class="text-body-1 text-medium-emphasis">Please try again or start a new session.</p>
+				<v-btn color="primary" to="/play-session" class="mt-4" rounded variant="flat">
 					Go to Play Sessions
 				</v-btn>
 			</div>

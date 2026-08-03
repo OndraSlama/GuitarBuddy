@@ -1,18 +1,32 @@
-import Vue from "vue";
-import Vuetify from "vuetify/lib";
-import colors from "vuetify/lib/util/colors";
+import "vuetify/styles";
+import { createVuetify } from "vuetify";
+import * as components from "vuetify/components";
+import * as directives from "vuetify/directives";
+import { aliases, mdi } from "vuetify/iconsets/mdi";
+import colors from "vuetify/util/colors";
 
-Vue.use(Vuetify);
-
-export default new Vuetify({
+export default createVuetify({
+	components,
+	directives,
+	icons: {
+		defaultSet: "mdi",
+		aliases,
+		sets: { mdi },
+	},
 	theme: {
-		dark: false,
+		defaultTheme: "light",
 		themes: {
 			light: {
-				primary: colors.green,
+				dark: false,
+				colors: {
+					primary: colors.green.base,
+				},
 			},
 			dark: {
-				primary: colors.green,
+				dark: true,
+				colors: {
+					primary: colors.green.base,
+				},
 			},
 		},
 	},

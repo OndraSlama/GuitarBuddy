@@ -4,28 +4,28 @@
 			<v-col cols="12" sm="8" md="6" lg="5">
 				<v-card class="elevation-6 pa-6 pa-md-10 rounded-lg">
 					<v-avatar color="primary" size="80" class="mb-6">
-						<v-icon dark size="50">mdi-account-music-outline</v-icon>
+						<v-icon color="white" size="50">mdi-account-music-outline</v-icon>
 					</v-avatar>
-					<h1 class="text-h4 font-weight-bold mb-3 primary--text">
+					<h1 class="text-h4 font-weight-bold mb-3 text-primary">
 						Ready to Jam Together?
 					</h1>
-					<p class="text-body-1 text--secondary mb-8">
+					<p class="text-body-1 text-medium-emphasis mb-8">
 						Start a Play Session to share your song choices live with friends or bandmates.
 						Everyone in the session will see the same song lyrics in real-time.
 					</p>
 					<v-btn
-						x-large
+						size="x-large"
 						color="success"
 						@click="startSession"
 						class="elevation-2"
 						:loading="startingSession"
 						rounded
-						depressed
+						variant="flat"
 					>
-						<v-icon left>mdi-play-circle-outline</v-icon>
+						<v-icon start>mdi-play-circle-outline</v-icon>
 						Start New Session
 					</v-btn>
-					<p class="text-caption mt-4 text--disabled">
+					<p class="text-caption mt-4 text-disabled">
 						Once started, share the session link to invite others.
 					</p>
 				</v-card>
@@ -37,6 +37,7 @@
 <script>
 import { mapGetters } from "vuex";
 export default {
+	emits: ["sessionStart", "sessionStartFailed"],
 	data() {
 		return {
 			startingSession: false,

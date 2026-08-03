@@ -2,57 +2,57 @@
 	<v-container fluid class="pa-0 ma-0" style="min-height: 100vh">
 		<!-- Kompaktní Session Info Banner -->
 		<v-card v-if="playSession" class="mb-5 elevation-2 rounded-lg session-banner">
-			<v-toolbar flat dense color="transparent" height="48px">
+			<v-toolbar flat density="compact" color="transparent" height="48">
 				<!-- Levá strana: Status a Info -->
-				<v-chip small :color="connectionStatus.color" dark class="font-weight-bold mr-3 ml-n1" label>
-					<v-icon left small class="mr-1">{{ connectionStatus.icon }}</v-icon>
-					{{ connectionStatus.text }}
-				</v-chip>
+				<v-chip size="small" :color="connectionStatus.color" class="font-weight-bold mr-3 ml-2" label>
+					<v-icon start size="small" class="mr-1">{{ connectionStatus.icon }}</v-icon>
+				{{ connectionStatus.text }}
+			</v-chip>
 
-				<v-spacer v-if="!isOwner"></v-spacer>
+			<v-spacer v-if="!isOwner"></v-spacer>
 
-				<!-- Střed/Pravá strana pro Majitele -->
-				<template v-if="isOwner">
-					<v-icon small color="primary" class="mr-1">mdi-crown-outline</v-icon>
-					<span class="text-subtitle-2 font-weight-medium primary--text mr-3">My Session</span>
-					<v-spacer></v-spacer>
+			<!-- Střed/Pravá strana pro Majitele -->
+			<template v-if="isOwner">
+				<v-icon size="small" color="primary" class="mr-1">mdi-crown-outline</v-icon>
+				<span class="text-subtitle-2 font-weight-medium text-primary mr-3">My Session</span>
+				<v-spacer></v-spacer>
+			</template>
+
+			<!-- Pravá strana: Čas a Účastníci (pro oba) -->
+			<v-tooltip location="top">
+				<template v-slot:activator="{ props: tooltipProps }">
+					<v-btn icon size="small" variant="text" @click="shareDialogOpened = true" v-bind="tooltipProps" class="mr-1">
+						<v-icon color="primary">mdi-share-variant-outline</v-icon>
+					</v-btn>
 				</template>
-                
-				<!-- Pravá strana: Čas a Účastníci (pro oba) -->
-                <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn icon small @click="shareDialogOpened = true" v-bind="attrs" v-on="on" class="mr-1">
-                            <v-icon color="primary">mdi-share-variant-outline</v-icon>
-                        </v-btn>
-                    </template>
-                    <span>Share Session</span>
-                </v-tooltip>
-				<div class="d-flex align-center text-caption text--secondary ml-auto">
-					<v-icon small class="mr-1">mdi-clock-outline</v-icon>
-					<span class="mr-3">{{ elapsedTime }}</span>
-					<v-icon small class="mr-1">mdi-account-multiple-outline</v-icon>
-					<span>{{ playSession.connected }}</span>
-				</div>
+				<span>Share Session</span>
+			</v-tooltip>
+			<div class="d-flex align-center text-caption text-medium-emphasis ml-auto">
+				<v-icon size="small" class="mr-1">mdi-clock-outline</v-icon>
+				<span class="mr-3">{{ elapsedTime }}</span>
+				<v-icon size="small" class="mr-1">mdi-account-multiple-outline</v-icon>
+				<span>{{ playSession.connected }}</span>
+			</div>
 
-				<!-- Tlačítko Stop pro Majitele (pokud je místo, jinak do menu) -->
-				<v-tooltip top v-if="isOwner">
-					<template v-slot:activator="{ on, attrs }">
-						<v-btn icon small @click="confirmStopSession" :loading="stoppingSession" v-bind="attrs" v-on="on" color="error" class="ml-2">
-							<v-icon>mdi-stop-circle-outline</v-icon>
-						</v-btn>
-					</template>
-					<span>Stop Session</span>
-				</v-tooltip>
+			<!-- Tlačítko Stop pro Majitele (pokud je místo, jinak do menu) -->
+			<v-tooltip location="top" v-if="isOwner">
+				<template v-slot:activator="{ props: tooltipProps }">
+					<v-btn icon size="small" variant="text" @click="confirmStopSession" :loading="stoppingSession" v-bind="tooltipProps" color="error" class="ml-2">
+						<v-icon>mdi-stop-circle-outline</v-icon>
+					</v-btn>
+				</template>
+				<span>Stop Session</span>
+			</v-tooltip>
 
-				<!-- Tlačítko Leave pro Účastníky -->
-				<v-tooltip top v-else>
-					<template v-slot:activator="{ on, attrs }">
-						<v-btn icon small @click="confirmLeaveSession" :loading="leavingSession" v-bind="attrs" v-on="on" color="orange" class="ml-2">
-							<v-icon>mdi-exit-to-app</v-icon>
-						</v-btn>
-					</template>
-					<span>Leave Session</span>
-				</v-tooltip>
+			<!-- Tlačítko Leave pro Účastníky -->
+			<v-tooltip location="top" v-else>
+				<template v-slot:activator="{ props: tooltipProps }">
+					<v-btn icon size="small" variant="text" @click="confirmLeaveSession" :loading="leavingSession" v-bind="tooltipProps" color="orange" class="ml-2">
+						<v-icon>mdi-exit-to-app</v-icon>
+					</v-btn>
+				</template>
+				<span>Leave Session</span>
+			</v-tooltip>
 			</v-toolbar>
 		</v-card>
 
@@ -75,17 +75,17 @@
 			>
 				<v-row class="fill-height" align="center" justify="center">
 					<v-col>
-						<v-icon size="90" color="grey lighten-1" class="mb-5">
+						<v-icon size="90" color="grey-lighten-1" class="mb-5">
 							{{ isOwner ? 'mdi-music-note-plus-outline' : 'mdi-timer-sand-empty' }}
 						</v-icon>
-						<h2 class="text-h5 font-weight-medium text--secondary mb-3">
+						<h2 class="text-h5 font-weight-medium text-medium-emphasis mb-3">
 							{{ isOwner ? "Select a Song to Share" : "Waiting for the Host" }}
 						</h2>
-						<p v-if="isOwner" class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
+						<p v-if="isOwner" class="text-body-1 text-disabled mx-auto" style="max-width: 450px;">
 							Choose a song from your collection or browse public songs and click on "To Session" button.
 							It will instantly appear here for all participants.
 						</p>
-						<p v-else class="text-body-1 text--disabled mx-auto" style="max-width: 450px;">
+						<p v-else class="text-body-1 text-disabled mx-auto" style="max-width: 450px;">
 							The session host will select a song soon.
 						</p>
 						<v-progress-circular
@@ -101,9 +101,9 @@
 							class="mt-6"
 							@click="openSongList"
 							rounded
-							depressed
+							variant="flat"
 						>
-							<v-icon left>mdi-playlist-music-outline</v-icon>
+							<v-icon start>mdi-playlist-music-outline</v-icon>
 							Open My Song List
 						</v-btn>
 					</v-col>
@@ -111,7 +111,7 @@
 			</v-card>
 			<div v-else :key="'no-session-data'" class="text-center mt-10">
 				<v-icon size="60" color="grey">mdi-alert-outline</v-icon>
-				<p class="text-h6 text--secondary mt-4">Loading session data or session not found.</p>
+				<p class="text-h6 text-medium-emphasis mt-4">Loading session data or session not found.</p>
 			</div>
 		</v-scroll-x-transition>
 
@@ -136,10 +136,10 @@
 			:session-link="sessionLink"
 		/>
 
-		<v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" app bottom right>
+		<v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="bottom right">
 			{{ snackbar.text }}
-			<template v-slot:action="{ attrs }">
-				<v-btn text v-bind="attrs" @click="snackbar.show = false">Close</v-btn>
+			<template v-slot:actions>
+				<v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
 			</template>
 		</v-snackbar>
 	</v-container>
@@ -149,16 +149,13 @@
 import { mapGetters, mapActions, mapMutations, mapState } from "vuex";
 import SongSheet from "../components/SongSheet.vue";
 import GeneralDialog from "./Dialogs/GeneralDialog.vue";
-// ShareSessionDialog bude buď globální nebo importován zde
-// import ShareSessionDialog from "./Dialogs/ShareSessionDialog.vue";
-import * as firebase from "firebase/app";
-import 'firebase/database';
+import firebase from "firebase/compat/app";
+import "firebase/compat/database";
 
 export default {
 	components: {
 		"song-sheet": SongSheet,
 		GeneralDialog,
-		// ShareSessionDialog, // Pokud není globální
 	},
 	props: {
 		sessionIdFromRoute: {
@@ -166,6 +163,7 @@ export default {
 			default: null,
 		}
 	},
+	emits: ["sessionStop"],
 	data() {
 		return {
 			songTransitioning: false,
@@ -258,19 +256,19 @@ export default {
 				if (this.localSessionId) {
 					// Disconnect from the session
 					await this.playSessionOff(this.localSessionId);
-					
+
 					// Remove session from localStorage
 					const lastSession = localStorage.getItem('lastActiveSessionId');
 					if (lastSession === this.localSessionId) {
 						localStorage.removeItem('lastActiveSessionId');
 						console.log(`Session ${this.localSessionId} removed from localStorage after leaving.`);
 					}
-					
+
 					// Clear local session state
 					this.localSessionId = null;
-					
+
 					this.showSnackbar("Successfully left the session.", "success");
-					
+
 					// Redirect to /play-session
 					this.$router.push('/play-session');
 				} else {
@@ -282,12 +280,12 @@ export default {
 			} catch (error) {
 				console.error("Error leaving session:", error);
 				this.showSnackbar("Failed to leave session.", "error");
-				
+
 				// Even if there's an error, try to clean up local state
 				this.setPlaySession(null);
 				this.localSessionId = null;
 				localStorage.removeItem('lastActiveSessionId');
-				
+
 				// Still redirect to play-session page
 				this.$router.push('/play-session');
 			} finally {
@@ -306,7 +304,7 @@ export default {
 					const hours = String(duration.hours()).padStart(2, '0');
 					const minutes = String(duration.minutes()).padStart(2, '0');
 					const seconds = String(duration.seconds()).padStart(2, '0');
-					
+
 					this.elapsedTime = duration.asHours() >= 1 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`;
 				} catch (e) {
 					this.elapsedTime = "N/A";
@@ -347,7 +345,6 @@ export default {
 		...mapGetters({
 			user: "getUser",
 			songListLoadingStore: "getSongListLoading",
-			viewportSize: "getViewportSize",
 		}),
 		isOwner() {
 			return this.playSession?.createdBy === this.user?.uid && !!this.user;
@@ -419,7 +416,7 @@ export default {
     window.addEventListener('offline', this.updateOnlineStatus);
 		// initializeSession se volá z watcheru na sessionIdFromRoute
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.intervalId) {
 			clearInterval(this.intervalId);
 			this.intervalId = null;
@@ -436,7 +433,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.session-banner .v-toolbar__content {
+.session-banner :deep(.v-toolbar__content) {
   padding-left: 8px;
   padding-right: 8px;
 }

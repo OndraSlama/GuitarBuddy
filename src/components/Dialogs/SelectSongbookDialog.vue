@@ -7,7 +7,6 @@
 				</v-list-item>
 			</v-list>
 		</div>
-		<!-- <div>OMG</div> -->
 	</v-dialog>
 </template>
 
@@ -16,6 +15,7 @@ import { mapGetters } from "vuex";
 import dialogBase from "../../mixins/dialogBase";
 export default {
 	mixins: [dialogBase],
+	emits: ["onSelected"],
 
 	methods: {
 		selectSongbook(songbook) {

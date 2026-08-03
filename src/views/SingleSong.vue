@@ -4,14 +4,14 @@
 		<v-scroll-x-transition>
 			<song-sheet v-if="!songListLoading && !transitioning && songValid" :song="song"></song-sheet>
 			<div v-if="!songValid && songDoesNotExist" class="d-flex justify-center ">
-				<div class="display-1 mt-5 ">Song does not exist</div>
+				<div class="text-h4 mt-5 ">Song does not exist</div>
 			</div>
 		</v-scroll-x-transition>
 	</div>
 </template>
 
 <script>
-import SongSheet from "../components/SongSheet";
+import SongSheet from "../components/SongSheet.vue";
 
 import { mapGetters } from "vuex";
 
@@ -72,10 +72,6 @@ export default {
 		"song-sheet": SongSheet,
 	},
 
-	// updated() {
-	// 	this.updateNavigationTitle();
-	// },
-
 	mounted() {
 		this.loadSong(this.id);
 	},
@@ -85,7 +81,7 @@ export default {
 		setTimeout(() => {
 			this.songDoesNotExist = true;
 		}, 5000);
-	},	
+	},
 
 	watch: {
 		id: function() {

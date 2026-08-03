@@ -1,52 +1,49 @@
-import Vue from "vue";
+import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import vuetify from "./plugins/vuetify";
-import * as firebase from "firebase";
-import GeneralDialog from "./components/Dialogs/GeneralDialog";
-import DeleteDialog from "./components/Dialogs/DeleteDialog";
-import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog";
-import SelectSongbookDialog from "./components/Dialogs/SelectSongbookDialog";
-import fullscreen from "vue-fullscreen";
+import insomnia from "./plugins/insomnia";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+import "firebase/compat/database";
+import GeneralDialog from "./components/Dialogs/GeneralDialog.vue";
+import DeleteDialog from "./components/Dialogs/DeleteDialog.vue";
+import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog.vue";
+import SelectSongbookDialog from "./components/Dialogs/SelectSongbookDialog.vue";
+import ShareSessionDialog from "./components/Dialogs/ShareSessionDialog.vue";
 import moment from "moment";
-import vueInsomnia from "vue-insomnia";
 import viewportSize from "./mixins/viewportSize";
-import ShareSessionDialog from "./components/Dialogs/ShareSessionDialog.vue"; 
 
-Vue.prototype.$moment = moment;
-Vue.config.productionTip = false;
+firebase.initializeApp({
+	apiKey: "AIzaSyAF_ixmGuQrZZWTPFLD3O8w-6fovmhlyQQ",
+	authDomain: "guitarbuddy-bcd3c.firebaseapp.com",
+	databaseURL: "https://guitarbuddy-bcd3c.firebaseio.com",
+	projectId: "guitarbuddy-bcd3c",
+	storageBucket: "guitarbuddy-bcd3c.appspot.com",
+	messagingSenderId: "267513568910",
+	appId: "1:267513568910:web:1e1ba1daa7f90ea6fc33df",
+	measurementId: "G-JDZY638NH4",
+});
 
+const app = createApp(App);
 
-Vue.use(vueInsomnia);
-Vue.use(fullscreen);
-Vue.mixin(viewportSize);
-Vue.component("general-dialog", GeneralDialog);
-Vue.component("delete-dialog", DeleteDialog);
-Vue.component("edit-public-song-dialog", EditPublicSongDialog);
-Vue.component("select-songbook-dialog", SelectSongbookDialog);
-Vue.component("share-session-dialog", ShareSessionDialog);
+app.config.globalProperties.$moment = moment;
 
-new Vue({
-	router,
-	store,
-	vuetify,
-	render: (h) => h(App),
-	created() {
-		firebase.initializeApp({
-			apiKey: "AIzaSyAF_ixmGuQrZZWTPFLD3O8w-6fovmhlyQQ",
-			authDomain: "guitarbuddy-bcd3c.firebaseapp.com",
-			databaseURL: "https://guitarbuddy-bcd3c.firebaseio.com",
-			projectId: "guitarbuddy-bcd3c",
-			storageBucket: "guitarbuddy-bcd3c.appspot.com",
-			messagingSenderId: "267513568910",
-			appId: "1:267513568910:web:1e1ba1daa7f90ea6fc33df",
-			measurementId: "G-JDZY638NH4",
-		});
+app.use(router);
+app.use(store);
+app.use(vuetify);
+app.use(insomnia);
+app.mixin(viewportSize);
+app.component("general-dialog", GeneralDialog);
+app.component("delete-dialog", DeleteDialog);
+app.component("edit-public-song-dialog", EditPublicSongDialog);
+app.component("select-songbook-dialog", SelectSongbookDialog);
+app.component("share-session-dialog", ShareSessionDialog);
 
-		store.dispatch("setUserStatusChange");
-	},
-}).$mount("#app");
+store.dispatch("setUserStatusChange");
+
+app.mount("#app");
 
 // Functions
 String.prototype.insert = function(index, string, space = " ") {

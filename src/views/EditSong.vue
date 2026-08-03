@@ -5,7 +5,7 @@
 			<v-row v-if="!transitioning && song !== null">
 				<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 6" style="position: relative">
 					<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="updateSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" v-on:back="$router.push('/song/' + id)" type="edit"></song-editor>
-					<v-btn xLarge icon color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
+					<v-btn size="x-large" icon variant="text" color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
 						<v-icon v-if="expanded">mdi-chevron-left</v-icon>
 						<v-icon v-else>mdi-chevron-right</v-icon>
 					</v-btn>
@@ -21,8 +21,8 @@
 </template>
 
 <script>
-import SongSheet from "../components/SongSheet";
-import SongEditor from "../components/SongEditor";
+import SongSheet from "../components/SongSheet.vue";
+import SongEditor from "../components/SongEditor.vue";
 import { mapGetters } from "vuex";
 export default {
 	data() {
@@ -54,8 +54,6 @@ export default {
 			this.$store.dispatch("updateSong", payload).then(() => {
 				this.snackbar = true;
 			});
-
-			//   this.$router.push("/song/" + this.id);
 		},
 
 		onCancel() {

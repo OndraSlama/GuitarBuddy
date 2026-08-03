@@ -2,21 +2,21 @@
     <v-container fluid>
       <v-row justify="center">
         <v-col cols="12" sm="8" md="6" lg="4">
-          <p v-if="willRedirect" class="display-1 text--secondary text-center mb-10">
+          <p v-if="willRedirect" class="text-h4 text-medium-emphasis text-center mb-10">
             You must be logged in to access this page
           </p>
-          <p v-if="!willRedirect" class="display-1 text--secondary text-center mb-10">
+          <p v-if="!willRedirect" class="text-h4 text-medium-emphasis text-center mb-10">
             Login or Register
           </p>
-  
+
           <v-card class="pa-5">
             <v-tabs v-model="tab" grow>
-              <v-tab>Login</v-tab>
-              <v-tab>Register</v-tab>
+              <v-tab :value="0">Login</v-tab>
+              <v-tab :value="1">Register</v-tab>
             </v-tabs>
-  
-            <v-tabs-items v-model="tab">
-              <v-tab-item>
+
+            <v-window v-model="tab">
+              <v-window-item :value="0">
                 <!-- Login Form -->
                 <v-form @submit.prevent="handleLogin" ref="loginForm" class="mt-5">
                   <v-text-field
@@ -25,7 +25,7 @@
                     type="email"
                     required
                     :rules="emailRules"
-                    outlined
+                    variant="outlined"
                     prepend-inner-icon="mdi-email-outline"
                   ></v-text-field>
                   <v-text-field
@@ -34,16 +34,16 @@
                     type="password"
                     required
                     :rules="passwordRules"
-                    outlined
+                    variant="outlined"
                     prepend-inner-icon="mdi-lock-outline"
                     class="mt-3"
                   ></v-text-field>
-                  <v-btn type="submit" color="primary" block large class="mt-5" :loading="loading">Login</v-btn>
-                  <p v-if="loginError" class="error--text text-center mt-3">{{ loginError }}</p>
+                  <v-btn type="submit" color="primary" block size="large" class="mt-5" :loading="loading">Login</v-btn>
+                  <p v-if="loginError" class="text-error text-center mt-3">{{ loginError }}</p>
                 </v-form>
-              </v-tab-item>
-  
-              <v-tab-item>
+              </v-window-item>
+
+              <v-window-item :value="1">
                 <!-- Registration Form -->
                 <v-form @submit.prevent="handleRegister" ref="registerForm" class="mt-5">
                   <v-text-field
@@ -52,7 +52,7 @@
                     type="email"
                     required
                     :rules="emailRules"
-                    outlined
+                    variant="outlined"
                     prepend-inner-icon="mdi-email-outline"
                   ></v-text-field>
                   <v-text-field
@@ -61,7 +61,7 @@
                     type="password"
                     required
                     :rules="passwordRules"
-                    outlined
+                    variant="outlined"
                     prepend-inner-icon="mdi-lock-outline"
                     class="mt-3"
                   ></v-text-field>
@@ -71,28 +71,28 @@
                     type="password"
                     required
                     :rules="confirmPasswordRules"
-                    outlined
+                    variant="outlined"
                     prepend-inner-icon="mdi-lock-check-outline"
                     class="mt-3"
                   ></v-text-field>
-                  <v-btn type="submit" color="success" block large class="mt-5" :loading="loading">Register</v-btn>
-                  <p v-if="registerError" class="error--text text-center mt-3">{{ registerError }}</p>
+                  <v-btn type="submit" color="success" block size="large" class="mt-5" :loading="loading">Register</v-btn>
+                  <p v-if="registerError" class="text-error text-center mt-3">{{ registerError }}</p>
                 </v-form>
-              </v-tab-item>
-            </v-tabs-items>
+              </v-window-item>
+            </v-window>
           </v-card>
-  
+
           <!-- Odstraněná část pro Google/Facebook -->
-  
+
         </v-col>
       </v-row>
     </v-container>
   </template>
-  
+
   <script>
   // Odstraněn import LoginUI
   import { mapGetters, mapActions } from "vuex";
-  
+
   export default {
     // Odstraněna komponenta LoginUI z components
     props: ["redirect"],
@@ -107,7 +107,7 @@
         registerPassword: "",
         registerPasswordConfirm: "",
         registerError: null,
-  
+
         emailRules: [
           v => !!v || "E-mail is required",
           v => /.+@.+\..+/.test(v) || "E-mail must be valid",
@@ -139,7 +139,8 @@
       ]),
       async handleLogin() {
         this.loginError = null;
-        if (this.$refs.loginForm.validate()) {
+        const { valid } = await this.$refs.loginForm.validate();
+        if (valid) {
           this.loading = true;
           try {
             await this.loginUserWithEmailAndPassword({
@@ -155,7 +156,8 @@
       },
       async handleRegister() {
         this.registerError = null;
-        if (this.$refs.registerForm.validate()) {
+        const { valid } = await this.$refs.registerForm.validate();
+        if (valid) {
            if (this.registerPassword !== this.registerPasswordConfirm) {
               this.registerError = "Passwords do not match.";
               return;
@@ -203,7 +205,7 @@
     },
   };
   </script>
-  
+
   <style lang="scss" scoped>
   /* Vaše styly */
   </style>

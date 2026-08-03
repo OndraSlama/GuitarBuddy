@@ -1,8 +1,8 @@
 <template>
 	<div>
-		<v-footer class="font-weight-medium" inset padless>
-			<v-col class="text-right" padless cols="12">
-				{{ new Date().getFullYear() }} —
+		<v-footer class="font-weight-medium pa-0">
+			<v-col class="text-right" cols="12">
+				{{ new Date().getFullYear() }} -
 				<strong>guitarbuddy</strong>
 			</v-col>
 		</v-footer>
@@ -10,7 +10,9 @@
 </template>
 
 <script>
-export default {};
+export default {
+	name: "AppFooter",
+};
 </script>
 
 <style lang="scss" scoped></style>

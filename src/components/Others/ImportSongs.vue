@@ -1,14 +1,13 @@
 <template>
 	<div class="text-center elevation-3 pa-6">
-		<!-- <div class="d-flex "> -->
-		<div class="display-3 mb-10" style="max-width:400px">
+		<div class="text-h2 mb-10" style="max-width:400px">
 			Import songs
 		</div>
 		<v-form ref="form">
-			<v-btn icon outlined color="primary" @click="validateAndOpenDialog" width="100" height="100" class="align-self-center">
+			<v-btn icon variant="outlined" color="primary" @click="validateAndOpenDialog" width="100" height="100" class="align-self-center">
 				<v-icon size="60" color="primary">mdi-import</v-icon>
 			</v-btn>
-			<v-file-input v-model="file" outlined show-size :rules="fileRules" accept=".chordpro" label="ChordPro file input" class="mt-10 mx-auto"></v-file-input>
+			<v-file-input v-model="file" variant="outlined" show-size :rules="fileRules" accept=".chordpro" label="ChordPro file input" class="mt-10 mx-auto"></v-file-input>
 		</v-form>
 
 		<import-settings-dialog v-model="openSettingsDialog" :importSettings="importSettings" v-on:accept="parseFile" />
@@ -18,14 +17,14 @@
 
 <script>
 import songParser from "../../mixins/songParser";
-import ImportSongSettingsDialog from "../Dialogs/ImportSongSettingsDialog";
-import ImportConfirmationDialog from "../Dialogs/ImportConfirmationDialog";
-import { mapGetters } from "vuex";
+import ImportSongSettingsDialog from "../Dialogs/ImportSongSettingsDialog.vue";
+import ImportConfirmationDialog from "../Dialogs/ImportConfirmationDialog.vue";
+import { loadViewPreferences } from "../../functions/viewPreferences";
 export default {
 	mixins: [songParser],
 	data() {
 		return {
-			fileRules: [(value) => !!value || "No file selected"],
+			fileRules: [(value) => (!!value && (!Array.isArray(value) || value.length > 0)) || "No file selected"],
 			file: null,
 			problems: [],
 			formatedSongs: [],
@@ -44,7 +43,7 @@ export default {
 	methods: {
 		validateAndOpenDialog() {
 			this.$refs.form.validate();
-			if (!this.file) return;
+			if (!this.selectedFile) return;
 			this.openSettingsDialog = true;
 		},
 
@@ -52,7 +51,7 @@ export default {
 			this.importSettings = { ...importSettings };
 
 			const reader = new FileReader();
-			reader.readAsText(this.file);
+			reader.readAsText(this.selectedFile);
 
 			reader.onload = () => {
 				this.problems = [];
@@ -130,9 +129,9 @@ export default {
 	},
 
 	computed: {
-		...mapGetters({
-			preferences: "getUserPreferences",
-		}),
+		selectedFile() {
+			return Array.isArray(this.file) ? this.file[0] : this.file;
+		},
 	},
 
 	components: {
@@ -147,7 +146,7 @@ export default {
 	},
 
 	mounted() {
-		this.standardNotation = this.preferences.notation == "Standard (A B C D E F G)";
+		this.standardNotation = loadViewPreferences().notation == "Standard (A B C D E F G)";
 	},
 };
 </script>

@@ -1,26 +1,15 @@
-import Vue from "vue";
-import Vuex from "vuex";
-import * as firebase from "firebase";
+import { createStore } from "vuex";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+import "firebase/compat/database";
 import normalizeString from "../functions/normalizeText";
 
-Vue.use(Vuex);
-
-export default new Vuex.Store({
+export default createStore({
 	state: {
 		currentPage: "",
 		publicSongs: [],
 		userSongBooks: {},
 		playSession: undefined,
-		userPreferences: {},
-		defaultPreferences: {
-			notation: "German (A H C D E F G)",
-			fontSize: "Small",
-			multipleColumns: true,
-			showTabs: true,
-			scrollSpeed: 40,
-		},
-
-		fontSizePreferences: ["Small", "Medium", "Large"],
 		notations: ["Standard (A B C D E F G)", "German (A H C D E F G)"],
 
 		userSongs: [],
@@ -56,15 +45,7 @@ export default new Vuex.Store({
 		getUser: (state) => state.user,
 		getUserSongs: (state) => state.userSongs,
 		getUserSongBooks: (state) => state.userSongBooks,
-		getUserPreferences: (state, getters) => {
-			if (getters.getUserLogged && state.userPreferences && Object.keys(state.userPreferences).length > 0) {
-				return state.userPreferences;
-			}
-			return state.defaultPreferences;
-		},
 		getPlaySession: (state) => state.playSession,
-		getDefaultPreferences: (state) => state.defaultPreferences,
-		getFontSizePreferences: (state) => state.fontSizePreferences,
 		getNotations: (state) => state.notations,
 		getAuthors: (state) => state.authors,
 		getLabels: (state) => state.labels,
@@ -236,11 +217,17 @@ export default new Vuex.Store({
 			state.userSongs = [];
 			state.userSongBooks = {};
 			state.playSession = undefined;
-			state.userPreferences = {};
 		},
 		setUser(state, user) {
+			// firebase compat User exposes its fields via prototype getters, so a
+			// plain spread would drop them; copy the fields the app relies on
 			state.user = {
-				...user,
+				uid: user.uid,
+				displayName: user.displayName,
+				email: user.email,
+				photoURL: user.photoURL,
+				emailVerified: user.emailVerified,
+				isAnonymous: user.isAnonymous,
 			};
 		},
 		setUserSongs(state, userSongs) {
@@ -248,9 +235,6 @@ export default new Vuex.Store({
 		},
 		setUserSongBooks(state, userSongBooks){
 			state.userSongBooks = {...userSongBooks}
-		},
-		setUserPreferences(state, userPreferences){
-			state.userPreferences = {...userPreferences}
 		},
 		setPlaySession(state, playSession){
 			state.playSession = playSession
@@ -393,27 +377,9 @@ export default new Vuex.Store({
 							}
 							commit("setUserSongBooks", {...songbooks});
 
-							if(obj && obj["preferences"]){
-								commit("setUserPreferences", {...obj["preferences"]});
-							}else{
-								const defaultPrefs = getters.getDefaultPreferences;
-								commit("setUserPreferences", defaultPrefs);
-								if (getters.getUserLogged) {
-									firebase
-										.database()
-										.ref("users/" + getters.getUser.uid + "/preferences")
-										.set(defaultPrefs)
-										.catch((e) => {
-											console.error("Error saving default preferences for new user:", e);
-										});
-								}
-							}
-							
 							commit("setPlaySession", (obj && obj["playSession"]) ? {...obj["playSession"]} : undefined);
 						}
 					});
-			} else {
-				commit("setUserPreferences", getters.getDefaultPreferences);
 			}
 		},
 
@@ -424,30 +390,6 @@ export default new Vuex.Store({
 					.ref("users/" + getters.getUser.uid)
 					.off("value");
 			}
-		},
-
-		updatePreferences({getters}, payload){
-			return new Promise((resolve, reject) => {
-				if (!getters.getUserLogged) {
-					reject()
-					return;
-				}
-				
-				firebase
-					.database()
-					.ref("users/" + getters.getUser.uid + "/preferences")
-					.update({
-						...payload,
-					})
-					.then(() => {
-						resolve();
-					})
-					.catch((e) => {
-						console.log(e);
-						reject();
-					});
-				
-			});
 		},
 
 		startPlaySession({ getters }) {
@@ -593,8 +535,7 @@ export default new Vuex.Store({
                         firebase
                             .database()
                             .ref("users/" + session.createdBy + "/playSession")
-                            .off("value")  
-                            .catch((e) => {console.log(e)});   
+                            .off("value");
 
                         resolve();
                     })
@@ -974,7 +915,6 @@ export default new Vuex.Store({
                     } else {
                         dispatch("loadUserDataOff");
                         commit("logout");
-						commit("setUserPreferences", { ...this.state.defaultPreferences });
 						resolve(null);
                     }
                 });

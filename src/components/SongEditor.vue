@@ -1,12 +1,12 @@
 <template>
 	<v-container fluid class="pa-0 fill-height align-start">
-		<v-form @submit.prevent="onSubmit" ref="form" lazy-validation class="d-flex flex-column flex-grow-1" style="width: 100%">
+		<v-form @submit.prevent="onSubmit" ref="form" class="d-flex flex-column flex-grow-1" style="width: 100%">
 			<image-dialog v-model="helpOpened" imagePath="https://firebasestorage.googleapis.com/v0/b/guitarbuddy-bcd3c.appspot.com/o/songEditorHelp.png?alt=media&token=3bb9508f-e6e5-4888-806a-cacf8a176020"></image-dialog>
-			
+
             <div v-if="tempSource">
                 <!-- Header Actions -->
                 <div class="d-flex align-center mb-2">
-                     <v-btn icon @click="$emit('back')" class="mr-2">
+                     <v-btn icon variant="text" @click="$emit('back')" class="mr-2">
 						<v-icon>mdi-arrow-left</v-icon>
 					</v-btn>
                     <div class="text-h6 font-weight-bold">
@@ -14,10 +14,10 @@
                     </div>
                     <v-spacer></v-spacer>
                     <div class="d-flex align-center">
-                        <v-switch v-model="tempSource.public" inset dense hide-details class="mt-0 mr-4" label="Public"></v-switch>
-                        <v-tooltip bottom>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon @click="helpOpened = true" v-bind="attrs" v-on="on">
+                        <v-switch v-model="tempSource.public" inset density="compact" hide-details class="mt-0 mr-4" label="Public"></v-switch>
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props: tooltipProps }">
+                                <v-btn icon variant="text" @click="helpOpened = true" v-bind="tooltipProps">
                                     <v-icon>mdi-help-circle-outline</v-icon>
                                 </v-btn>
                             </template>
@@ -27,41 +27,41 @@
                 </div>
 
                 <!-- Metadata Card -->
-                <v-card outlined class="mb-4 rounded-lg overflow-hidden elevation-1 border-light">
+                <v-card variant="outlined" class="mb-4 rounded-lg overflow-hidden elevation-1 border-light">
                     <v-card-text class="pa-4">
-                        <v-text-field 
-                            v-model="tempSource.title" 
-                            placeholder="Song Title" 
-                            class="text-h5 font-weight-bold mb-2" 
-                            :rules="rules" 
-                            hide-details="auto" 
-                            solo 
-                            flat 
-                            background-color="transparent"
+                        <v-text-field
+                            v-model="tempSource.title"
+                            placeholder="Song Title"
+                            class="text-h5 font-weight-bold mb-2"
+                            :rules="rules"
+                            hide-details="auto"
+                            variant="solo"
+                            flat
+                            bg-color="transparent"
                         ></v-text-field>
                         <v-divider class="mb-4"></v-divider>
                         <v-row dense>
                             <v-col cols="12" sm="6">
-                                <v-combobox 
-                                    dense 
-                                    outlined 
-                                    label="Author" 
-                                    v-model="tempSource.author" 
+                                <v-combobox
+                                    density="compact"
+                                    variant="outlined"
+                                    label="Author"
+                                    v-model="tempSource.author"
                                     :items="authors"
                                     hide-details
                                     prepend-inner-icon="mdi-account"
                                 ></v-combobox>
                             </v-col>
                             <v-col cols="12" sm="6">
-                                <v-combobox 
-                                    dense 
-                                    outlined 
-                                    label="Tags" 
-                                    v-model="tempSource.labels" 
-                                    :items="labels" 
-                                    hide-selected 
-                                    multiple 
-                                    small-chips 
+                                <v-combobox
+                                    density="compact"
+                                    variant="outlined"
+                                    label="Tags"
+                                    v-model="tempSource.labels"
+                                    :items="labels"
+                                    hide-selected
+                                    multiple
+                                    chips
                                     hide-details
                                     prepend-inner-icon="mdi-tag-multiple"
                                 ></v-combobox>
@@ -71,7 +71,7 @@
                 </v-card>
 
                 <!-- Editor Card -->
-                <v-card outlined class="rounded-lg d-flex flex-column flex-grow-1 mb-4 elevation-1 border-light" style="min-height: 500px;">
+                <v-card variant="outlined" class="rounded-lg d-flex flex-column flex-grow-1 mb-4 elevation-1 border-light" style="min-height: 500px;">
                     <chord-text-editor
                         v-model="tempSource.text"
                         :chords-above-text="tempSource.chordsAboveText"
@@ -85,13 +85,13 @@
 
                 <!-- Footer Actions -->
                 <div class="d-flex align-center pb-4">
-                     <v-btn v-if="type === 'edit'" @click="$emit('delete')" color="error" text large>
-                        <v-icon left>mdi-delete-outline</v-icon> Delete
+                     <v-btn v-if="type === 'edit'" @click="$emit('delete')" color="error" variant="text" size="large">
+                        <v-icon start>mdi-delete-outline</v-icon> Delete
 					</v-btn>
                     <v-spacer></v-spacer>
-                    <v-btn text @click="reset" large class="mr-2">Cancel</v-btn>
-                    <v-btn depressed color="primary" type="submit" :disabled="!validInput || !userLogged" large>
-                         <v-icon left>{{ type === 'add' ? 'mdi-plus' : 'mdi-content-save' }}</v-icon>
+                    <v-btn variant="text" @click="reset" size="large" class="mr-2">Cancel</v-btn>
+                    <v-btn variant="flat" color="primary" type="submit" :disabled="!validInput || !userLogged" size="large">
+                         <v-icon start>{{ type === 'add' ? 'mdi-plus' : 'mdi-content-save' }}</v-icon>
                          {{ type === 'add' ? 'Create Song' : 'Save Changes' }}
                     </v-btn>
                 </div>
@@ -102,15 +102,17 @@
 
 <script>
 import { mapGetters } from "vuex";
-// import calculateSize from "calculate-size";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
-import ImageDialog from "../components/Dialogs/ImageDialog";
+import ImageDialog from "../components/Dialogs/ImageDialog.vue";
 import ChordTextEditor from "./ChordTextEditor.vue";
 
 import songParser from "../mixins/songParser";
 export default {
 	mixins: [songParser],
+
+	emits: ["song-submited", "cancel", "delete", "back", "input"],
+
 	data() {
 		return {
 			rules: [(value) => !!value || ""],
@@ -192,8 +194,6 @@ export default {
 							comparingWord++;
 						}
 						i++;
-						// const chordChar = line.charAt(i);
-						// const lineChar = lines[index + 1].charAt(i);
 					}
 					lines[index] = "";
 					for (let i = 0; i < positionInLine.length; i++) {
@@ -316,7 +316,6 @@ export default {
 	components: {
 		"image-dialog": ImageDialog,
 		"chord-text-editor": ChordTextEditor,
-		// "tooltip-wraper": TooltipWraper,
 	},
 };
 </script>

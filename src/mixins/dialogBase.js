@@ -4,19 +4,20 @@ export default {
 			dialogOpened: false,
 		};
 	},
-	props: ["value"],
+	props: ["modelValue"],
+	emits: ["update:modelValue"],
 
 	created() {
-		this.dialogOpened = this.value;
+		this.dialogOpened = this.modelValue;
 	},
 
 	watch: {
-		value: function(val) {
+		modelValue: function(val) {
 			this.dialogOpened = val;
 		},
 
 		dialogOpened: function(val) {
-			this.$emit("input", val);
+			this.$emit("update:modelValue", val);
 		},
-	},	
+	},
 };

@@ -1,7 +1,7 @@
 <template>
 	<v-dialog v-model="dialogOpened" max-width="500px" transition="dialog-transition">
 		<v-card>
-			<v-card-title class="headline">Do you want to save the imported songs?</v-card-title>
+			<v-card-title class="text-h5">Do you want to save the imported songs?</v-card-title>
 
 			<v-card-text>
 				<h3 class="mb-2">
@@ -15,9 +15,9 @@
 			<v-card-actions>
 				<v-spacer></v-spacer>
 
-				<v-btn color="secondary" text @click="dialogOpened = false">Cancel</v-btn>
+				<v-btn color="secondary" variant="text" @click="dialogOpened = false">Cancel</v-btn>
 
-				<v-btn color="primary" text @click="onAgree">Save songs</v-btn>
+				<v-btn color="primary" variant="text" @click="onAgree">Save songs</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
@@ -28,12 +28,7 @@ import dialogBase from "../../mixins/dialogBase";
 export default {
 	mixins: [dialogBase],
 	props: ["songs"],
-
-	// data(){
-	// 	return {
-
-	// 	}
-	// },
+	emits: ["accept"],
 
 	methods: {
 		onAgree() {

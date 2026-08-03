@@ -4,6 +4,7 @@
 
 <script>
 export default {
+  name: "AboutPage",
   created() {
     this.$store.commit("setCurrentPage", "About");
   },
