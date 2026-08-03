@@ -7,7 +7,7 @@
 						Browse Public Songs
 					</p>
 					<v-text-field v-model="filters.search" density="compact" hide-details prepend-inner-icon="mdi-magnify" variant="outlined"></v-text-field>
-					<v-toolbar class="elevation-0 my-3" height="40" :color="$vuetify.theme.current.dark ? '#121212' : undefined">
+					<v-toolbar class="elevation-0 my-3" height="40" color="transparent">
 						<v-spacer></v-spacer>
 
 						<v-toolbar-items>

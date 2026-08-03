@@ -2,12 +2,12 @@
 	<div>
 		<v-navigation-drawer v-if="userLogged" v-model="opened" :permanent="drawerPermanent" :temporary="viewportSize.xs" :width="viewportSize.smAndUp ? 450 : 350">
 			<!----------------------------------- Filters / selection / tabs ----------------------------------->
-			<v-container :style="{ position: 'fixed', 'z-index': '1', 'background-color': $vuetify.theme.current.dark ? '#363636' : 'white' }">
+			<v-container :style="{ position: 'fixed', 'z-index': '1', 'background-color': 'rgb(var(--v-theme-surface))' }">
 				<v-row class="ma-3 mt-3">
 					<v-text-field v-model="filters.search" density="compact" hide-details prepend-inner-icon="mdi-magnify" variant="outlined"></v-text-field>
 				</v-row>
 				<!----------------------------------- Order by menu ----------------------------------->
-				<v-toolbar class="elevation-0 mt-n3" height="40" :color="$vuetify.theme.current.dark ? '#363636' : undefined">
+				<v-toolbar class="elevation-0 mt-n3" height="40" color="transparent">
 					<v-menu transition="slide-y-transition" location="bottom">
 						<template v-slot:activator="{ props: menuProps }">
 							<v-btn variant="text" :icon="viewportSize.xs" v-bind="menuProps">
@@ -242,7 +242,7 @@
 									</div>
 
 									<template v-slot:append>
-										<v-btn icon variant="text" @click.prevent.stop="toggleFavourite(song.id, song.favourite)">
+										<v-btn icon variant="text" density="comfortable" @click.prevent.stop="toggleFavourite(song.id, song.favourite)">
 											<v-icon v-if="!song.favourite" color="grey-lighten-1">mdi-star-outline</v-icon>
 
 											<v-icon v-else color="yellow">mdi-star</v-icon>
@@ -250,7 +250,7 @@
 
 										<v-menu transition="slide-y-transition" location="bottom">
 											<template v-slot:activator="{ props: menuProps }">
-												<v-btn icon variant="text" @click.stop.prevent class="ml-2" v-bind="menuProps">
+												<v-btn icon variant="text" density="comfortable" @click.stop.prevent class="ml-1" v-bind="menuProps">
 													<v-icon>mdi-dots-vertical</v-icon>
 												</v-btn>
 											</template>
@@ -567,4 +567,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+/* Vuetify 3 indents v-list-group children via --indent-padding, which wastes
+   too much width in the narrow drawer; keep songs aligned near the edge */
+:deep(.v-list-group__items) {
+	--indent-padding: 0px;
+}
+</style>
