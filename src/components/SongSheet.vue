@@ -232,6 +232,12 @@ for (const jtabGlobal of ["canvas", "notes", "pairs", "array", "pair", "fingered
 	if (!(jtabGlobal in window)) window[jtabGlobal] = undefined;
 }
 import jtab from "jtab";
+
+// jtab/Raphael rendering forces synchronous layout for every diagram; the
+// output for a given chord symbol is static, so cache the generated SVG and
+// reuse it across songs and re-renders.
+const chordSvgCache = new Map();
+
 export default {
 	props: ["song", "expanded", "type"],
 
@@ -408,18 +414,33 @@ export default {
 		},
 
 		renderTabs() {
-			if (this.currentPreferences.showTabs && !this.updatingFontSize) {
+			if (!this.currentPreferences.showTabs || this.updatingFontSize) {
+				return;
+			}
+			// Deferred to the next frame so the song text paints before the
+			// (layout-heavy) diagram drawing starts
+			requestAnimationFrame(() => {
 				this.distinctChords.forEach((chord) => {
+					// Only render tabs for chords that Tonal recognizes
+					if (chord.original || !chord.symbol) return;
+
+					const element = document.getElementById(chord.symbol);
+					if (!element || element.dataset.renderedChord === chord.symbol) return;
+
 					try {
-						// Only try to render tabs for chords that Tonal recognizes
-						if (!chord.original && chord.symbol) {
-							jtab.render(document.getElementById(chord.symbol), chord.symbol);
+						const cached = chordSvgCache.get(chord.symbol);
+						if (cached !== undefined) {
+							element.innerHTML = cached;
+						} else {
+							jtab.render(element, chord.symbol);
+							chordSvgCache.set(chord.symbol, element.innerHTML);
 						}
+						element.dataset.renderedChord = chord.symbol;
 					} catch {
 						console.log("");
 					}
 				});
-			}
+			});
 		},
 
 		async updateFontSize() {

@@ -186,8 +186,7 @@
 			<div style="margin-top:160px; overflow:scroll;">
 				<v-skeleton-loader v-show="songListLoading" v-for="n in 3" :key="n" height="50" type="list-item-two-line"></v-skeleton-loader>
 				<v-list v-model:opened="openedGroups">
-					<v-scroll-y-transition group hide-on-leave>
-						<v-list-group v-for="group in groupedSongs(filters)" :key="group.group" :value="group.group">
+					<v-list-group v-for="group in groupedUserSongs" :key="group.group" :value="group.group">
 							<template v-slot:activator="{ props: activatorProps }">
 								<v-list-item v-bind="activatorProps">
 									<v-list-item-title>
@@ -217,8 +216,7 @@
 									</v-list-item-title>
 								</v-list-item>
 							</template>
-							<v-scroll-y-transition group hide-on-leave>
-								<v-list-item v-for="song in group.songs" :key="song.id" :style="filters.groupBy == 'author' ? 'maxHeight: 40px' : 'maxHeight: 80px'" :to="'/song/' + song.id">
+							<v-list-item v-for="song in group.songs" :key="song.id" :style="filters.groupBy == 'author' ? 'maxHeight: 40px' : 'maxHeight: 80px'" :to="'/song/' + song.id">
 									<template v-slot:prepend>
 										<v-checkbox-btn v-if="selectionEnabled" class="mr-4" v-model="selection[song.id]" @click.stop.prevent="onSongSelect(group)"></v-checkbox-btn>
 									</template>
@@ -282,11 +280,9 @@
 											</v-list>
 										</v-menu>
 									</template>
-								</v-list-item>
-							</v-scroll-y-transition>
+							</v-list-item>
 							<v-divider class="mx-4"></v-divider>
 						</v-list-group>
-					</v-scroll-y-transition>
 				</v-list>
 			</div>
 			<v-fab-transition>
@@ -399,7 +395,7 @@ export default {
 			this.$store.dispatch("deleteSongBook", name);
 		},
 		onGroupSelect(groupName) {
-			this.groupedSongs(this.filters).forEach((group) => {
+			this.groupedUserSongs.forEach((group) => {
 				if (group.group === groupName) {
 					group.songs.forEach((song) => {
 						this.selection[song.id] = this.groupSelection[groupName];
@@ -549,6 +545,12 @@ export default {
 			set(val) {
 				this.$store.commit("setSongListOpened", val);
 			},
+		},
+
+		// Cached here so re-renders don't re-run the store's parameterized
+		// (and therefore uncached) filter/group/sort getter
+		groupedUserSongs() {
+			return this.groupedSongs(this.filters);
 		},
 
 		...mapGetters({

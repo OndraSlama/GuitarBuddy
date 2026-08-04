@@ -116,15 +116,13 @@
 					<v-sheet class="elevation-1">
 						<v-skeleton-loader v-show="showLoading" v-for="n in 5" :key="n" type="list-item-two-line"></v-skeleton-loader>
 						<v-list v-if="!showLoading">
-							<v-scroll-x-transition group hide-on-leave>
-								<component :is="filters.groupBy !== 'favourite' ? 'v-list-group' : 'v-list'" v-for="group in groupedSongs(filters)" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
-									<template v-slot:activator="{ props: activatorProps }" v-if="filters.groupBy !== 'favourite'">
-										<v-list-item v-bind="activatorProps">
-											<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
-										</v-list-item>
-									</template>
-									<v-scroll-x-transition group hide-on-leave>
-										<v-list-item v-for="song in group.songs" :to="'/song/' + song.id" :key="song.id">
+							<component :is="filters.groupBy !== 'favourite' ? 'v-list-group' : 'v-list'" v-for="group in visibleGroupedSongs" :key="group.group" :prepend-icon="filters.groupBy == 'author' ? 'mdi-account-circle-outline' : ''">
+								<template v-slot:activator="{ props: activatorProps }" v-if="filters.groupBy !== 'favourite'">
+									<v-list-item v-bind="activatorProps">
+										<v-list-item-title>{{ group.group ? group.group : "Unknown" }}</v-list-item-title>
+									</v-list-item>
+								</template>
+								<v-list-item v-for="song in group.songs" :to="'/song/' + song.id" :key="song.id">
 											<div>
 												<v-list-item-title>
 													<v-icon v-if="filters.groupBy == 'author'" color="grey" class="mr-2">mdi-music-note-outline</v-icon>
@@ -170,10 +168,8 @@
 													</v-btn>
 												</v-fab-transition>
 											</template>
-										</v-list-item>
-									</v-scroll-x-transition>
-								</component>
-							</v-scroll-x-transition>
+								</v-list-item>
+							</component>
 						</v-list>
 					</v-sheet>
 				</v-col>
@@ -213,16 +209,7 @@ export default {
 		},
 
 		alreadyInCollection(publicSongId) {
-			if (this.userLogged) {
-				for (let i = 0; i < this.userSongs.length; i++) {
-					const song = this.userSongs[i];
-					if (song.id === publicSongId) {
-						return true;
-					}
-				}
-				return false;
-			}
-			return false;
+			return this.userSongIds.has(publicSongId);
 		},
 	},
 
@@ -230,21 +217,38 @@ export default {
 		showLoading() {
 			return this.publicSongListLoading && this.grouperSong;
 		},
-		showList() {
-			return this.filteredPublicSongs.length > 0;
-		},
 
 		loadedSong() {
 			return this.$store.getters.getLoadedSong;
 		},
 
-		loadMoreButtonDisabled() {
-			let groupedSongs = this.groupedSongs({ ...this.filters, lastRow: null });
+		userSongIds() {
+			if (!this.userLogged) return new Set();
+			return new Set(this.userSongs.map((song) => song.id));
+		},
 
-			if (groupedSongs.length == 1) {
-				return this.filters.lastRow >= (groupedSongs[0]?.songs?.length ?? 0);
+		// The full grouping/sorting runs once per filter or data change; the
+		// visible slice and the button state both derive from it without
+		// re-invoking the (uncached) parameterized store getter.
+		allGroupedSongs() {
+			return this.groupedSongs({ ...this.filters, firstRow: null, lastRow: null });
+		},
+
+		visibleGroupedSongs() {
+			const groups = this.allGroupedSongs;
+			const lastRow = this.filters.lastRow;
+			if (groups.length == 1) {
+				return [{ group: groups[0].group, songs: groups[0].songs.slice(0, lastRow ?? groups[0].songs.length) }];
 			}
-			return this.filters.lastRow >= (groupedSongs?.length ?? 0);
+			return groups.slice(0, lastRow ?? groups.length);
+		},
+
+		loadMoreButtonDisabled() {
+			const groups = this.allGroupedSongs;
+			if (groups.length == 1) {
+				return (this.filters.lastRow ?? 0) >= (groups[0]?.songs?.length ?? 0);
+			}
+			return (this.filters.lastRow ?? 0) >= groups.length;
 		},
 
 		...mapGetters({
@@ -257,6 +261,8 @@ export default {
 
 	created() {
 		this.$store.commit("setCurrentPage", "Browse Songs");
+		// Render the first page immediately; "Load more" extends it
+		this.filters.lastRow = 30;
 		this.$store.dispatch("loadPublicSongs");
 	},
 };

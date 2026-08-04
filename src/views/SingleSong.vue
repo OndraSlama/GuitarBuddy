@@ -1,12 +1,10 @@
 <template>
 	<div>
 		<v-skeleton-loader v-show="(songListLoading || !songValid) && !songDoesNotExist" type="article"></v-skeleton-loader>
-		<v-scroll-x-transition>
-			<song-sheet v-if="!songListLoading && !transitioning && songValid" :song="song"></song-sheet>
-			<div v-if="!songValid && songDoesNotExist" class="d-flex justify-center ">
-				<div class="text-h4 mt-5 ">Song does not exist</div>
-			</div>
-		</v-scroll-x-transition>
+		<song-sheet v-if="!songListLoading && songValid" :song="song"></song-sheet>
+		<div v-if="!songValid && songDoesNotExist" class="d-flex justify-center ">
+			<div class="text-h4 mt-5 ">Song does not exist</div>
+		</div>
 	</div>
 </template>
 
@@ -18,7 +16,6 @@ import { mapGetters } from "vuex";
 export default {
 	data() {
 		return {
-			transitioning: false,
 			songDoesNotExist: false,
 			song: null
 		};
@@ -36,14 +33,14 @@ export default {
 				.then((song) => {
 					this.song = song;
 					if (this.userLogged && this.$store.getters.getCurrentSong(song.id)) {
-						this.$store.dispatch("updateLastViewed", song.id);
+						// Deferred so the write-back (and the resulting song list
+						// update) doesn't compete with rendering the song itself
+						setTimeout(() => {
+							this.$store.dispatch("updateLastViewed", song.id);
+						}, 2000);
 					}
 					this.updateNavigationTitle();
-					this.transitioning = true;
 					this.songDoesNotExist = false;
-					setTimeout(() => {
-						this.transitioning = false;
-					}, 150);
 					setTimeout(() => {
 						this.songDoesNotExist = true;
 					}, 5000);

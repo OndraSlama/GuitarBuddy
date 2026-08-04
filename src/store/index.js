@@ -4,6 +4,27 @@ import "firebase/compat/auth";
 import "firebase/compat/database";
 import normalizeString from "../functions/normalizeText";
 
+// Sorting and searching normalize strings with a regex, which is expensive
+// inside comparators; cache the normalized keys per song object. Song objects
+// keep a stable identity across incremental updates, so the WeakMap stays warm.
+// Firebase compat .on() returns the registered callback; keep the handles so
+// each subscription can be detached individually (several listeners can share
+// the users/<uid>/playSession path).
+const activeListeners = {};
+
+const songSortKeysCache = new WeakMap();
+function songSortKeys(song) {
+	let keys = songSortKeysCache.get(song);
+	if (!keys) {
+		keys = {
+			title: normalizeString(song.title) ?? "",
+			author: normalizeString(song.author) ?? "",
+		};
+		songSortKeysCache.set(song, keys);
+	}
+	return keys;
+}
+
 export default createStore({
 	state: {
 		currentPage: "",
@@ -58,11 +79,10 @@ export default createStore({
 		getDialogOpened: (state) => state.deleteDialogOpened,
 
 		getFilteredSongs: (_, getters) => (songs, filters) => {
+			const search = normalizeString(filters.search) ?? "";
 			let filteredSongs = songs.filter((el) => {
-				const titleMatch = normalizeString(el.title).includes(normalizeString(filters.search));
-				const authorMatch = normalizeString(el.author).includes(normalizeString(filters.search));
-
-				return titleMatch || authorMatch;
+				const keys = songSortKeys(el);
+				return keys.title.includes(search) || keys.author.includes(search);
 			});
 
 			let groupsObject = {};
@@ -102,11 +122,11 @@ export default createStore({
 					}	
 				}
 
-				groups.forEach(group => {						
+				groups.forEach(group => {
 					if (groupsObject[group] == undefined) {
 						groupsObject[group] = [];
 					}
-					groupsObject[group].push({ ...song, selected: false });
+					groupsObject[group].push(song);
 				});
 			});
 
@@ -117,31 +137,27 @@ export default createStore({
 
 			for (let group of groupsArray) {
 				group.songs.sort((a, b) => {
-					const titleOrder = filters.titleNameOrder ? normalizeString(a.title) < normalizeString(b.title) : normalizeString(a.title) > normalizeString(b.title);
-					const authorNameOrder = filters.authorNameOrder ? normalizeString(a.author) < normalizeString(b.author) : normalizeString(a.author) > normalizeString(b.author);
-					const dateModifiedOrder = filters.modifiedDateOrder ? normalizeString(a.modifiedAt) < normalizeString(b.modifiedAt) : normalizeString(a.modifiedAt) > normalizeString(b.modifiedAt);
-					const dateCreatedOrder = filters.createdDateOrder ? normalizeString(a.createdAt) < normalizeString(b.createdAt) : normalizeString(a.createdAt) > normalizeString(b.createdAt);
-					const lastViewedOrder = filters.lastViewedOrder ? normalizeString(a.lastViewed ?? "") < normalizeString(b.lastViewed ?? "") : normalizeString(a.lastViewed ?? "") > normalizeString(b.lastViewed ?? "");
-					const forksOrder = filters.forksOrder ? (a.forks ?? 0) > (b.forks ?? 0) : (a.forks ?? 0) < (b.forks ?? 0);
+					const keysA = songSortKeys(a);
+					const keysB = songSortKeys(b);
 					if (filters.orderBy == "authorName") {
-						return authorNameOrder ? 1 : -1;
+						return (filters.authorNameOrder ? keysA.author < keysB.author : keysA.author > keysB.author) ? 1 : -1;
 					}
 					if (filters.orderBy == "dateModified") {
-						return dateModifiedOrder ? 1 : -1;
+						return (filters.modifiedDateOrder ? (a.modifiedAt ?? "") < (b.modifiedAt ?? "") : (a.modifiedAt ?? "") > (b.modifiedAt ?? "")) ? 1 : -1;
 					}
 					if (filters.orderBy == "dateCreated") {
-						return dateCreatedOrder ? 1 : -1;
+						return (filters.createdDateOrder ? (a.createdAt ?? "") < (b.createdAt ?? "") : (a.createdAt ?? "") > (b.createdAt ?? "")) ? 1 : -1;
 					}
 					if (filters.orderBy == "lastViewed") {
 						if ((a.lastViewed ?? "") !== (b.lastViewed ?? "")){
-							return lastViewedOrder ? 1 : -1;
+							return (filters.lastViewedOrder ? (a.lastViewed ?? "") < (b.lastViewed ?? "") : (a.lastViewed ?? "") > (b.lastViewed ?? "")) ? 1 : -1;
 						}
 					}
 					if (filters.orderBy == "forks") {
-						return forksOrder ? 1 : -1;
+						return (filters.forksOrder ? (a.forks ?? 0) > (b.forks ?? 0) : (a.forks ?? 0) < (b.forks ?? 0)) ? 1 : -1;
 					}
-					
-					return titleOrder ? 1 : -1;
+
+					return (filters.titleNameOrder ? keysA.title < keysB.title : keysA.title > keysB.title) ? 1 : -1;
 				});
 			}
 	
@@ -233,6 +249,20 @@ export default createStore({
 		setUserSongs(state, userSongs) {
 			state.userSongs = userSongs;
 		},
+		upsertUserSong(state, song) {
+			const index = state.userSongs.findIndex((el) => el.id === song.id);
+			if (index === -1) {
+				state.userSongs.push(song);
+			} else {
+				state.userSongs.splice(index, 1, song);
+			}
+		},
+		removeUserSong(state, id) {
+			const index = state.userSongs.findIndex((el) => el.id === id);
+			if (index !== -1) {
+				state.userSongs.splice(index, 1);
+			}
+		},
 		setUserSongBooks(state, userSongBooks){
 			state.userSongBooks = {...userSongBooks}
 		},
@@ -272,17 +302,19 @@ export default createStore({
 				})
 			},
 			
-		loadSong({ getters, commit, dispatch }, payload) {
+		loadSong({ state, getters, commit, dispatch }, payload) {
 			commit("setSongLoading", true);
-			
+
 			return new Promise((resolve, reject) => {
 				let userSong = getters.getCurrentSong(payload)
 				if (userSong) {
-					console.log("userSong", userSong);
 					resolve(userSong)
 					commit("setSongLoading", false);
-				}else{					
-					dispatch("loadPublicSongs").then(() => {
+				}else{
+					// Reuse the already-loaded catalog; a full re-download on every
+					// song open added a serial round trip to each navigation.
+					const catalogReady = state.publicSongs.length > 0 ? Promise.resolve() : dispatch("loadPublicSongs");
+					catalogReady.then(() => {
 						let publicSong = getters.getPublicSong(payload)
 						if (!publicSong) {
 							reject("Song not found")
@@ -295,7 +327,7 @@ export default createStore({
 							.ref("users/" + publicSong.createdBy + "/songs/" + publicSong.id)
 							.once("value")
 							.then((data) => {
-								resolve({ ...data.val(), id: data.key });							
+								resolve({ ...data.val(), id: data.key });
 							})
 							.catch((e) => {
 								reject(e);
@@ -305,8 +337,8 @@ export default createStore({
 							})
 					})
 				}
-				
-			});			
+
+			});
 		},
 
 		
@@ -345,50 +377,72 @@ export default createStore({
 				});
 		},
 
+		// Songs sync per child instead of one listener on the whole user node:
+		// with a single "value" listener, any write (e.g. updating lastViewed on
+		// song open) re-downloaded the entire library including all lyrics.
 		loadUserDataOn({ getters, commit }) {
-			if (getters.getUserLogged) {
-				commit("setSongListLoading", true);
-				firebase
-					.database()
-					.ref("users/" + getters.getUser.uid)
-					.on("value", (data) => {
-						commit("setSongListLoading", false);
-						if (getters.getUserLogged) {
-							const obj = data.val();
+			if (!getters.getUserLogged) return;
 
-							let userSongs = [];
-							if (obj && obj["songs"]) {
-								for (let key in obj["songs"]) {
-									userSongs.push({
-										id: key,
-										...obj["songs"][key],
-									});
-								}
-							}							
-							commit("setUserSongs", userSongs);
-							
-							let songbooks = (obj && obj["playBooks"]) ? obj["playBooks"] : {};
-							for (const key in songbooks) {
-								for (const songid in songbooks[key]) {
-									if (!songbooks[key][songid]){
-										delete songbooks[key][songid]
-									}
-								}								  
-							}
-							commit("setUserSongBooks", {...songbooks});
+			commit("setSongListLoading", true);
+			const userRef = firebase.database().ref("users/" + getters.getUser.uid);
+			const songsRef = userRef.child("songs");
 
-							commit("setPlaySession", (obj && obj["playSession"]) ? {...obj["playSession"]} : undefined);
-						}
+			songsRef.once("value", (data) => {
+				if (!getters.getUserLogged) return;
+				const obj = data.val() || {};
+				let userSongs = [];
+				for (let key in obj) {
+					userSongs.push({
+						id: key,
+						...obj[key],
 					});
-			}
+				}
+				commit("setUserSongs", userSongs);
+				commit("setSongListLoading", false);
+
+				// child_added replays existing children on attach; upsert makes it idempotent
+				songsRef.on("child_added", (snap) => {
+					if (getters.getUserLogged) commit("upsertUserSong", { id: snap.key, ...snap.val() });
+				});
+				songsRef.on("child_changed", (snap) => {
+					if (getters.getUserLogged) commit("upsertUserSong", { id: snap.key, ...snap.val() });
+				});
+				songsRef.on("child_removed", (snap) => {
+					if (getters.getUserLogged) commit("removeUserSong", snap.key);
+				});
+			});
+
+			activeListeners.userPlayBooks = userRef.child("playBooks").on("value", (data) => {
+				if (!getters.getUserLogged) return;
+				let songbooks = data.val() || {};
+				for (const key in songbooks) {
+					for (const songid in songbooks[key]) {
+						if (!songbooks[key][songid]){
+							delete songbooks[key][songid]
+						}
+					}
+				}
+				commit("setUserSongBooks", {...songbooks});
+			});
+
+			activeListeners.userPlaySession = userRef.child("playSession").on("value", (data) => {
+				if (!getters.getUserLogged) return;
+				commit("setPlaySession", data.val() ? {...data.val()} : undefined);
+			});
 		},
 
 		loadUserDataOff({ getters }) {
 			if (getters.getUserLogged) {
-				firebase
-					.database()
-					.ref("users/" + getters.getUser.uid)
-					.off("value");
+				const userRef = firebase.database().ref("users/" + getters.getUser.uid);
+				userRef.child("songs").off();
+				if (activeListeners.userPlayBooks) {
+					userRef.child("playBooks").off("value", activeListeners.userPlayBooks);
+					activeListeners.userPlayBooks = null;
+				}
+				if (activeListeners.userPlaySession) {
+					userRef.child("playSession").off("value", activeListeners.userPlaySession);
+					activeListeners.userPlaySession = null;
+				}
 			}
 		},
 
@@ -491,10 +545,10 @@ export default createStore({
 									.ref("users/" + session.createdBy + "/playSession")
 									.update({connected: (obj && obj.connected ? obj.connected : 0) + 1})
 								})
-                        firebase
+                        activeListeners.sessionView = firebase
                             .database()
                             .ref("users/" + session.createdBy + "/playSession")
-                            .on("value", (data) => { 
+                            .on("value", (data) => {
                                 commit("setPlaySession", {...data.val()})
                              })
                              resolve();
@@ -532,10 +586,13 @@ export default createStore({
 									.ref("users/" + session.createdBy + "/playSession")
 									.update({connected: (obj && obj.connected ? obj.connected : 1) - 1})
 								})
-                        firebase
-                            .database()
-                            .ref("users/" + session.createdBy + "/playSession")
-                            .off("value");
+                        if (activeListeners.sessionView) {
+                            firebase
+                                .database()
+                                .ref("users/" + session.createdBy + "/playSession")
+                                .off("value", activeListeners.sessionView);
+                            activeListeners.sessionView = null;
+                        }
 
                         resolve();
                     })

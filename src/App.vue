@@ -4,9 +4,7 @@
 		<song-list></song-list>
 		<v-main class="pt-0">
 			<router-view v-slot="{ Component }">
-				<v-scroll-y-transition hide-on-leave>
-					<component :is="Component" class="mt-15 pa-sm-5 pa-0 ma-0"></component>
-				</v-scroll-y-transition>
+				<component :is="Component" class="mt-15 pa-sm-5 pa-0 ma-0"></component>
 			</router-view>
 		</v-main>
 		<app-footer></app-footer>
