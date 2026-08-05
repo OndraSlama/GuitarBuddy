@@ -96,6 +96,7 @@
 
 <script>
 import { aloneChordsRegex, isChordsLine } from "../functions/chordLine";
+import { chordDrag } from "../functions/chordDrag";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
 import { Codemirror } from "vue-codemirror";
@@ -104,11 +105,16 @@ import { EditorView, keymap, highlightActiveLine, Decoration, ViewPlugin } from 
 import { closeBrackets } from "@codemirror/autocomplete";
 import { oneDark } from "@codemirror/theme-one-dark";
 
-const bracketChordRegex = /\[[A-H]([#b♯♭]?)(m|maj|min|mi|dim|aug|sus[24]?|add\d+|\d+|M\d*|m\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)*\]/g;
-const aloneChordRegex = /[A-H]([#b♯♭]?)(m|maj|min|mi|dim|aug|sus[24]?|add\d+|\d+|M\d*|m\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)?/g;
-const chordOnlyLinePattern = /^([A-H]([#b♯♭]?)(m|maj|min|mi|dim|aug|sus[24]?|add\d+|\d+|M\d*|m\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)?\s*)+$/;
+// Longer suffixes must come before shorter prefixes of themselves (maj/min/mi
+// before m): outside brackets nothing follows the group to force backtracking,
+// so "Ami" would otherwise match only as "Am"
+const bracketChordRegex = /\[[A-H]([#b♯♭]?)(maj|min|mi|m|dim|aug|sus[24]?|add\d+|\d+|M\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)*\]/g;
+const aloneChordRegex = /[A-H]([#b♯♭]?)(maj|min|mi|m|dim|aug|sus[24]?|add\d+|\d+|M\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)*/g;
+const chordOnlyLinePattern = /^([A-H]([#b♯♭]?)(maj|min|mi|m|dim|aug|sus[24]?|add\d+|\d+|M\d*|°|ø|\+|-|\/[A-H][#b♯♭]?)*\s*)+$/;
 
 const chordMark = Decoration.mark({ class: "cm-chord-highlight" });
+
+const isChordOnlyLine = (text) => text.trim().length > 0 && chordOnlyLinePattern.test(text.trim());
 
 // Highlights chords in the visible document: bracketed chords always, bare
 // chords only on chord-only lines when "chords above text" mode is active.
@@ -190,11 +196,11 @@ export default {
 	computed: {
 		helperText() {
 			if (this.chordMode !== 'brackets') {
-				return 'Place chords on separate lines above lyrics';
+				return 'Place chords on separate lines above lyrics • Drag a chord to move it';
 			}
 			return this.$vuetify.display.smAndDown
-				? 'Type chords in [brackets] like [Am] [F] [C]'
-				: 'Type chords in [brackets] like [Am] [F] [C] • Press Ctrl+K (⌘+K) to insert chord brackets';
+				? 'Type chords in [brackets] like [Am] [F] [C] • Drag a chord to move it'
+				: 'Type chords in [brackets] like [Am] [F] [C] • Drag a chord to move it • Press Ctrl+K (⌘+K) to insert chord brackets';
 		},
 
 		editorExtensions() {
@@ -213,6 +219,12 @@ export default {
 					},
 				]),
 				chordHighlighter(this.chordMode === 'above'),
+				chordDrag({
+					chordsAbove: this.chordMode === 'above',
+					bracketRegex: bracketChordRegex,
+					bareRegex: aloneChordRegex,
+					isChordLine: isChordOnlyLine,
+				}),
 			];
 
 			if (this.$vuetify.theme.current.dark) {
@@ -545,6 +557,10 @@ export default {
 	border-radius: 2px;
 	padding: 0px 2px;
 	margin: 0;
+	// Chords are draggable; touch-action none lets touch drags start on them
+	// without the browser hijacking the gesture for scrolling
+	cursor: grab;
+	touch-action: none;
 	font-weight: 500;
 	font-size: 1em;
 	font-family: inherit;
