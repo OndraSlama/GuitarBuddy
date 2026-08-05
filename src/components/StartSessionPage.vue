@@ -37,7 +37,6 @@
 <script>
 import { mapGetters } from "vuex";
 export default {
-	emits: ["sessionStart", "sessionStartFailed"],
 	data() {
 		return {
 			startingSession: false,
@@ -46,15 +45,11 @@ export default {
 	methods: {
 		async startSession() {
 			this.startingSession = true;
-			this.$emit("sessionStart");
 			try {
 				const sessionId = await this.$store.dispatch("startPlaySession");
-				console.log("Session created with ID:", sessionId);
-				// Redirect to the session page
 				this.$router.push(`/play-session/${sessionId}`);
 			} catch (error) {
 				console.error("Failed to start session:", error);
-				this.$emit("sessionStartFailed");
 				this.startingSession = false;
 			}
 		},

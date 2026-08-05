@@ -20,7 +20,7 @@
 				</v-toolbar-items>
 				<v-spacer></v-spacer>
 				<v-toolbar-items>
-					<v-btn v-show="type !== 'session-view'" :disabled="playSessionActive" variant="text" :icon="collapse" @click.stop="sendToSession">
+					<v-btn v-show="type !== 'session-view'" :disabled="!canSendToSession" variant="text" :icon="collapse" @click.stop="sendToSession">
 						<v-icon :start="!collapse">mdi-share-outline</v-icon>
 						<span v-show="!collapse">to session</span>
 					</v-btn>
@@ -151,6 +151,11 @@
 						<v-icon>{{ scrollActive ? "mdi-close" : "mdi-arrow-down" }}</v-icon>
 					</v-btn>
 
+					<v-btn v-if="showSyncScrollButton" color="primary" rounded variant="flat" class="elevation-3 position-fixed" @click="resyncScroll" :style="{ bottom: viewportSize.mdAndUp ? '48px' : '88px', right: '104px', zIndex: 4 }">
+						<v-icon start>mdi-sync</v-icon>
+						Sync scroll
+					</v-btn>
+
 					<v-col class>
 						<div class="text-h3 text-high-emphasis" style="min-width: 200px">
 							{{ song.title ? song.title : "Song preview" }}
@@ -223,6 +228,7 @@
 import { mapGetters } from "vuex";
 import { Chord } from "@tonaljs/tonal";
 import { loadViewPreferences, saveViewPreferences, FONT_SIZE_MIN, FONT_SIZE_MAX } from "../functions/viewPreferences";
+import { computeScrollAnchor, resolveScrollDelta } from "../functions/scrollAnchor";
 // jtab assigns a number of undeclared globals while rendering, which throws
 // under strict-mode ESM; predefining them on window keeps the assignments
 // resolvable. List derived by scanning jtab.js for assignment targets that
@@ -259,16 +265,20 @@ export default {
 			lastScrollTime: 0,
 			fontSizeUpdateTimeout: null,
 			lastResizeTime: 0,
+			scrollSynced: true,
+			publishScrollTimeout: null,
+			lastPublishedAnchor: null,
 		};
 	},
 
 	methods: {
 		sendToSession() {
-			this.$store.dispatch("updatePlaySession", {
-				...this.playSession,
-				currentSong: this.song,
+			if (!this.activeSessionId) return;
+			this.$store.dispatch("setSessionSong", {
+				sessionId: this.activeSessionId,
+				song: this.song,
 			});
-			this.$router.push("/play-session");
+			this.$router.push(`/play-session/${this.activeSessionId}`);
 			this.$emit("cancel");
 		},
 		onColumnChange(multipleColumns) {
@@ -692,8 +702,87 @@ export default {
 			this.scrollAnimationId = requestAnimationFrame(() => {
 				this.pageScroll();
 			});
-		}
+		},
 
+		// In fullscreen the sheet scrolls inside its own container instead of
+		// the window; every scroll-sync path must resolve the scroller the
+		// same way or host and participants read different positions.
+		getScroller() {
+			return this.fullscreen && this.$refs.fullscreenContainer ? this.$refs.fullscreenContainer : window;
+		},
+
+		getScrollerTop() {
+			const scroller = this.getScroller();
+			return scroller === window ? window.scrollY : scroller.scrollTop;
+		},
+
+		scrollerIsScrollable() {
+			const scroller = this.getScroller();
+			if (scroller === window) return document.documentElement.scrollHeight > window.innerHeight + 10;
+			return scroller.scrollHeight > scroller.clientHeight + 10;
+		},
+
+		onSessionScroll() {
+			if (!this.isSessionOwner || this.publishScrollTimeout) return;
+			this.publishScrollTimeout = setTimeout(() => {
+				this.publishScrollTimeout = null;
+				this.publishScrollAnchor();
+			}, 250);
+		},
+
+		publishScrollAnchor() {
+			const sessionId = this.playSession?.id;
+			if (!sessionId || !this.isSessionOwner) return;
+			// "top: true" instead of a line anchor, so participants land at their
+			// own document top; a clamped first-line anchor would scroll them down
+			// past their (differently sized) song header.
+			const anchor = this.getScrollerTop() <= 5 ? { top: true } : computeScrollAnchor(this.$refs.songSheet);
+			if (!anchor) return;
+			const last = this.lastPublishedAnchor;
+			if (
+				last &&
+				!!last.top === !!anchor.top &&
+				last.section === anchor.section &&
+				last.line === anchor.line &&
+				Math.abs((last.offset ?? 0) - (anchor.offset ?? 0)) < 0.03
+			) {
+				return;
+			}
+			this.lastPublishedAnchor = anchor;
+			this.$store.dispatch("publishSessionScroll", { sessionId, anchor });
+		},
+
+		applyRemoteScroll(anchor) {
+			if (!anchor) return;
+			const scroller = this.getScroller();
+			if (anchor.top) {
+				scroller.scrollTo({ top: 0, behavior: "smooth" });
+				return;
+			}
+			const delta = resolveScrollDelta(this.$refs.songSheet, anchor);
+			if (delta === null || Math.abs(delta) < 4) return;
+			scroller.scrollBy({ top: delta, behavior: "smooth" });
+		},
+
+		// User input (wheel/touch/keys) is what distinguishes manual scrolling
+		// from the programmatic scrolls applied by sync; programmatic scrolling
+		// never produces these events.
+		onManualScrollIntent(event) {
+			if (!this.isSessionView || this.isSessionOwner || !this.scrollSynced) return;
+			if (event.type === "keydown") {
+				const scrollKeys = [" ", "PageUp", "PageDown", "ArrowUp", "ArrowDown", "Home", "End"];
+				if (!scrollKeys.includes(event.key)) return;
+				const tag = event.target?.tagName;
+				if (tag === "INPUT" || tag === "TEXTAREA") return;
+			}
+			if (!this.scrollerIsScrollable()) return;
+			this.scrollSynced = false;
+		},
+
+		resyncScroll() {
+			this.scrollSynced = true;
+			this.applyRemoteScroll(this.sessionScroll);
+		},
 	},
 
 	computed: {
@@ -736,8 +825,20 @@ export default {
 			return classes
 		},
 
-		playSessionActive() {
-			return !this.playSession?.id;
+		canSendToSession() {
+			return !!this.activeSessionId;
+		},
+
+		isSessionView() {
+			return this.type === "session-view";
+		},
+
+		isSessionOwner() {
+			return this.isSessionView && !!this.user && this.playSession?.createdBy === this.user.uid;
+		},
+
+		showSyncScrollButton() {
+			return this.isSessionView && !this.isSessionOwner && !this.scrollSynced;
 		},
 
 		editable() {
@@ -816,7 +917,9 @@ export default {
 			user: "getUser",
 			userLogged: "getUserLogged",
 			notations: "getNotations",
+			activeSessionId: "getActiveSessionId",
 			playSession: "getPlaySession",
+			sessionScroll: "getSessionScroll",
 		}),
 	},
 
@@ -836,11 +939,34 @@ export default {
 		if (typeof this.vueInsomnia === 'function') {
 			this.vueInsomnia().on();
 		}
+
+		if (this.isSessionView) {
+			// capture phase catches window scrolling and the fullscreen
+			// container's inner scrolling with a single listener
+			document.addEventListener("scroll", this.onSessionScroll, { capture: true, passive: true });
+			window.addEventListener("wheel", this.onManualScrollIntent, { passive: true });
+			window.addEventListener("touchmove", this.onManualScrollIntent, { passive: true });
+			window.addEventListener("keydown", this.onManualScrollIntent);
+			// late joiners: land on the host's current position once layout settles
+			if (!this.isSessionOwner && this.sessionScroll) {
+				setTimeout(() => {
+					if (this.scrollSynced) this.applyRemoteScroll(this.sessionScroll);
+				}, 300);
+			}
+		}
 	},
 
 	unmounted() {
 		window.removeEventListener("resize", this.onResize);
 		document.removeEventListener("fullscreenchange", this.onFullscreenChange);
+		document.removeEventListener("scroll", this.onSessionScroll, { capture: true });
+		window.removeEventListener("wheel", this.onManualScrollIntent);
+		window.removeEventListener("touchmove", this.onManualScrollIntent);
+		window.removeEventListener("keydown", this.onManualScrollIntent);
+		if (this.publishScrollTimeout) {
+			clearTimeout(this.publishScrollTimeout);
+			this.publishScrollTimeout = null;
+		}
 		// Clean up any pending timeouts
 		if (this.fontSizeUpdateTimeout) {
 			clearTimeout(this.fontSizeUpdateTimeout);
@@ -859,6 +985,11 @@ export default {
 	},
 
 	watch: {
+		sessionScroll(anchor) {
+			if (!this.isSessionView || this.isSessionOwner || !this.scrollSynced) return;
+			this.applyRemoteScroll(anchor);
+		},
+
 		currentPreferences: {
 			handler(newPrefs) {
 				saveViewPreferences(newPrefs);

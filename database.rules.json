@@ -1,6 +1,32 @@
 {
 	"rules": {
 		".read": "true",
-		".write": "auth != null",
+		"users": {
+			"$uid": {
+				".write": "auth != null && auth.uid === $uid"
+			}
+		},
+		"publicSongs": {
+			".write": "auth != null"
+		},
+		"authors": {
+			".write": "auth != null"
+		},
+		"labels": {
+			".write": "auth != null"
+		},
+		"playSessions": {
+			"$sessionId": {
+				".write": "auth != null && (data.exists() ? data.child('createdBy').val() === auth.uid : newData.child('createdBy').val() === auth.uid)",
+				"participants": {
+					".write": "true"
+				}
+			}
+		},
+		"sessionScroll": {
+			"$sessionId": {
+				".write": "auth != null && root.child('playSessions').child($sessionId).child('createdBy').val() === auth.uid"
+			}
+		}
 	}
 }

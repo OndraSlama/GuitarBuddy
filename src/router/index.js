@@ -3,6 +3,25 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/Home.vue";
 // import AuthGuard from "../router/guard"; // Stále ho můžeme používat pro jiné cesty
 import store from "../store"; // Potřebujeme store pro kontrolu přihlášení
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+
+// Firebase restores a persisted session asynchronously, so on a hard page load
+// the guard must wait for the first auth emission before deciding - otherwise
+// deep links to guarded routes always bounce through /login. Created lazily:
+// this module is imported before firebase.initializeApp() runs in main.js.
+let authReady = null;
+function waitForAuthReady() {
+	if (!authReady) {
+		authReady = new Promise((resolve) => {
+			const unsubscribe = firebase.auth().onAuthStateChanged(() => {
+				unsubscribe();
+				resolve();
+			});
+		});
+	}
+	return authReady;
+}
 
 const routes = [
 	{
@@ -65,11 +84,15 @@ const router = createRouter({
 	routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const userIsLoggedIn = store.getters.getUserLogged;
-  const lastActiveSessionId = localStorage.getItem('lastActiveSessionId');
+router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const isPlaySessionBaseRoute = to.name === 'PlaySessionBase'; // Cesta /play-session bez ID
+
+  // Only routes whose outcome depends on auth wait for it; public pages render immediately
+  if (requiresAuth || isPlaySessionBaseRoute) await waitForAuthReady();
+
+  const userIsLoggedIn = store.getters.getUserLogged;
+  const lastActiveSessionId = localStorage.getItem('lastActiveSessionId');
 
   if (isPlaySessionBaseRoute && !userIsLoggedIn && lastActiveSessionId) {
     // Uživatel kliknul na "Play Session" v menu, není přihlášen, ale má session v localStorage

@@ -9,8 +9,35 @@ import normalizeString from "../functions/normalizeText";
 // keep a stable identity across incremental updates, so the WeakMap stays warm.
 // Firebase compat .on() returns the registered callback; keep the handles so
 // each subscription can be detached individually (several listeners can share
-// the users/<uid>/playSession path).
+// a path, e.g. .info/connected).
 const activeListeners = {};
+
+// Presence for the currently joined play session. The participant key is
+// re-created on every reconnect (.info/connected pattern), because a network
+// drop triggers the server-side onDisconnect removal.
+let sessionPresence = null;
+
+function teardownSessionPresence() {
+	if (!sessionPresence) return;
+	sessionPresence.connectedRef.off("value", sessionPresence.connectedCallback);
+	sessionPresence.participantRef.onDisconnect().cancel();
+	sessionPresence.participantRef.remove();
+	sessionPresence = null;
+}
+
+function teardownSessionListener() {
+	teardownSessionPresence();
+	if (activeListeners.sessionView && activeListeners.sessionViewRef) {
+		activeListeners.sessionViewRef.off("value", activeListeners.sessionView);
+	}
+	activeListeners.sessionView = null;
+	activeListeners.sessionViewRef = null;
+	if (activeListeners.scrollView && activeListeners.scrollViewRef) {
+		activeListeners.scrollViewRef.off("value", activeListeners.scrollView);
+	}
+	activeListeners.scrollView = null;
+	activeListeners.scrollViewRef = null;
+}
 
 const songSortKeysCache = new WeakMap();
 function songSortKeys(song) {
@@ -31,6 +58,8 @@ export default createStore({
 		publicSongs: [],
 		userSongBooks: {},
 		playSession: undefined,
+		activeSessionId: null,
+		sessionScroll: null,
 		notations: ["Standard (A B C D E F G)", "German (A H C D E F G)"],
 
 		userSongs: [],
@@ -67,6 +96,8 @@ export default createStore({
 		getUserSongs: (state) => state.userSongs,
 		getUserSongBooks: (state) => state.userSongBooks,
 		getPlaySession: (state) => state.playSession,
+		getActiveSessionId: (state) => state.activeSessionId,
+		getSessionScroll: (state) => state.sessionScroll,
 		getNotations: (state) => state.notations,
 		getAuthors: (state) => state.authors,
 		getLabels: (state) => state.labels,
@@ -233,6 +264,7 @@ export default createStore({
 			state.userSongs = [];
 			state.userSongBooks = {};
 			state.playSession = undefined;
+			state.activeSessionId = null;
 		},
 		setUser(state, user) {
 			// firebase compat User exposes its fields via prototype getters, so a
@@ -268,6 +300,12 @@ export default createStore({
 		},
 		setPlaySession(state, playSession){
 			state.playSession = playSession
+		},
+		setActiveSessionId(state, id){
+			state.activeSessionId = id
+		},
+		setSessionScroll(state, anchor){
+			state.sessionScroll = anchor
 		},
 		setAuthors(state, authors){
 			state.authors = authors
@@ -425,9 +463,9 @@ export default createStore({
 				commit("setUserSongBooks", {...songbooks});
 			});
 
-			activeListeners.userPlaySession = userRef.child("playSession").on("value", (data) => {
+			activeListeners.userActiveSessionId = userRef.child("activeSessionId").on("value", (data) => {
 				if (!getters.getUserLogged) return;
-				commit("setPlaySession", data.val() ? {...data.val()} : undefined);
+				commit("setActiveSessionId", data.val() || null);
 			});
 		},
 
@@ -439,190 +477,156 @@ export default createStore({
 					userRef.child("playBooks").off("value", activeListeners.userPlayBooks);
 					activeListeners.userPlayBooks = null;
 				}
-				if (activeListeners.userPlaySession) {
-					userRef.child("playSession").off("value", activeListeners.userPlaySession);
-					activeListeners.userPlaySession = null;
+				if (activeListeners.userActiveSessionId) {
+					userRef.child("activeSessionId").off("value", activeListeners.userActiveSessionId);
+					activeListeners.userActiveSessionId = null;
 				}
 			}
 		},
 
-		startPlaySession({ getters }) {
-			return new Promise((resolve, reject) => {
-				if (getters.getUserLogged) {
-					firebase
-						.database()
-						.ref("users/" + getters.getUser.uid + "/playSession")
-						.once("value")
-						.then((data) => {
-							let obj = data.val();
-							if (obj != null){
-								console.log("Session already started. ID: " + obj.id);
-								resolve(obj.id)
-								return
-							} 
+		// The session document lives entirely under playSessions/<id>; the owner
+		// only keeps a pointer at users/<uid>/activeSessionId. Ending a session
+		// writes status: "ended" instead of deleting the node, so participants
+		// get an unambiguous signal instead of a null snapshot.
+		async startPlaySession({ getters }) {
+			if (!getters.getUserLogged) throw new Error("User not logged in");
+			const uid = getters.getUser.uid;
+			const db = firebase.database();
+			const pointerRef = db.ref("users/" + uid + "/activeSessionId");
 
-							firebase
-								.database()
-								.ref("playSessions/")
-								.push({
-									createdBy: getters.getUser.uid
-								})
-								.then((data) => {
-									let newSession = {	
-										id: data.key,	
-										createdBy: getters.getUser.uid,
-										createdAt: new Date().toISOString(),
-										updatedAt: new Date().toISOString(),
-										connected: 0,
-										currentSong: null,
-									};
-		
-									firebase
-										.database()
-										.ref("users/" + getters.getUser.uid + "/playSession")
-										.update(newSession)
-										.then(() => {							
-											resolve(newSession.id);
-										})
-										.catch((e) => {
-											console.log(e);
-											reject(e);
-										});
-								})
-							
-							
-							
-						});					
-				} else {
-					reject("User not logged in");
+			const existingId = (await pointerRef.once("value")).val();
+			if (existingId) {
+				const existing = (await db.ref("playSessions/" + existingId).once("value")).val();
+				if (existing && existing.createdBy === uid && existing.status !== "ended") {
+					return existingId;
 				}
+				await pointerRef.remove();
+			}
+
+			// leftover node from the pre-rework data model
+			db.ref("users/" + uid + "/playSession").remove().catch(() => {});
+
+			const sessionRef = db.ref("playSessions").push();
+			await sessionRef.set({
+				createdBy: uid,
+				createdAt: firebase.database.ServerValue.TIMESTAMP,
+				updatedAt: firebase.database.ServerValue.TIMESTAMP,
+				status: "active",
 			});
+			await pointerRef.set(sessionRef.key);
+			return sessionRef.key;
 		},
 
-		updatePlaySession({ getters }, payload) {
-			return new Promise((resolve, reject) => {
-				if (getters.getUserLogged) {				  
-		
-					firebase
-						.database()
-						.ref("users/" + getters.getUser.uid + "/playSession")
-						.update({...payload})
-						.then(() => {							
-							resolve(payload.id);
-						})
-						.catch((e) => {
-							console.log(e);
-							reject(e);
-						});
-										
-				} else {
-					reject("User not logged in");
-				}
-			});
-		},
-
-        playSessionOn({commit}, payload) {
-			return new Promise((resolve, reject) => {
-                firebase
-                    .database()
-                    .ref("playSessions/" + payload)
-                    .once("value")
-                    .then((data) => {		
-						let session = data.val();
-						if (!session || !session.createdBy) {
-							console.error("Play session or createdBy field is missing for ID:", payload);
-							reject("Invalid session data");
-							return;
-						}	
-						firebase
-							.database()
-							.ref("users/" + session.createdBy + "/playSession")
-							.once("value")
-							.then((data) => { 
-								let obj = data.val();
-								firebase
-									.database()
-									.ref("users/" + session.createdBy + "/playSession")
-									.update({connected: (obj && obj.connected ? obj.connected : 0) + 1})
-								})
-                        activeListeners.sessionView = firebase
-                            .database()
-                            .ref("users/" + session.createdBy + "/playSession")
-                            .on("value", (data) => {
-                                commit("setPlaySession", {...data.val()})
-                             })
-                             resolve();
-                    })
-                    .catch((e) => {
-                        console.log(e);
-						reject(e);
-                    });
-			});
-		},
-
-        playSessionOff(_, payload) {
-			return new Promise((resolve, reject) => {
-				firebase
+		setSessionSong({ getters }, { sessionId, song }) {
+			if (!getters.getUserLogged) return Promise.reject(new Error("User not logged in"));
+			return firebase
 				.database()
-				.ref("playSessions/" + payload)
-				.once("value")
-				.then((data) => {		
-						
-						let session = data.val();
-						if (!session || !session.createdBy) {
-							console.error("Play session or createdBy field is missing for ID:", payload);
-							resolve(); 
-							return;
-						}	
-						firebase
-							.database()
-							.ref("users/" + session.createdBy + "/playSession")
-							.once("value")
-							.then((data) => { 
-								
-								let obj = data.val();
-								firebase
-									.database()
-									.ref("users/" + session.createdBy + "/playSession")
-									.update({connected: (obj && obj.connected ? obj.connected : 1) - 1})
-								})
-                        if (activeListeners.sessionView) {
-                            firebase
-                                .database()
-                                .ref("users/" + session.createdBy + "/playSession")
-                                .off("value", activeListeners.sessionView);
-                            activeListeners.sessionView = null;
-                        }
+				.ref("playSessions/" + sessionId)
+				.update({
+					currentSong: song,
+					updatedAt: firebase.database.ServerValue.TIMESTAMP,
+				});
+		},
 
-                        resolve();
-                    })
-                    .catch((e) => {
+		playSessionOn({ commit, getters }, sessionId) {
+			return new Promise((resolve, reject) => {
+				const sessionRef = firebase.database().ref("playSessions/" + sessionId);
+				sessionRef
+					.once("value")
+					.then((snap) => {
+						const session = snap.val();
+						// nodes without status are leftovers from the pre-rework format
+						if (!session || !session.createdBy || !session.status) {
+							reject(new Error("Session not found"));
+							return;
+						}
+
+						teardownSessionListener();
+
+						let ended = session.status === "ended";
+						activeListeners.sessionViewRef = sessionRef;
+						activeListeners.sessionView = sessionRef.on("value", (data) => {
+							const val = data.val();
+							// a deleted node is treated the same as an ended session
+							ended = !val || !val.createdBy || val.status === "ended";
+							if (ended) teardownSessionPresence();
+							commit("setPlaySession", val ? { id: sessionId, ...val } : { id: sessionId, status: "ended" });
+						});
+
+						// Scroll sync lives at a sibling path with its own listener so the
+						// frequent scroll writes never re-commit the session document
+						// (which would hand SongSheet a new song reference on every tick).
+						activeListeners.scrollViewRef = firebase.database().ref("sessionScroll/" + sessionId);
+						activeListeners.scrollView = activeListeners.scrollViewRef.on("value", (data) => {
+							commit("setSessionScroll", data.val());
+						});
+
+						if (!ended) {
+							const user = getters.getUser;
+							const connectedRef = firebase.database().ref(".info/connected");
+							const participantRef = sessionRef.child("participants").push();
+							sessionPresence = { connectedRef, participantRef, connectedCallback: null };
+							sessionPresence.connectedCallback = connectedRef.on("value", (s) => {
+								if (s.val() !== true || ended) return;
+								participantRef.onDisconnect().remove();
+								participantRef.set({
+									joinedAt: firebase.database.ServerValue.TIMESTAMP,
+									uid: user?.uid ?? null,
+									name: user?.displayName ?? null,
+								});
+							});
+						}
+
+						resolve({ id: sessionId, ...session });
+					})
+					.catch((e) => {
 						console.log(e);
 						reject(e);
-					});   
+					});
 			});
-		},	
-		
-		stopPlaySession({ getters }, payload) {
-			return new Promise((resolve, reject) => {
-				if (getters.getUserLogged) {	 
+		},
 
-					firebase
-						.database()
-						.ref("playSessions/" + payload)
-						.remove();
+		playSessionOff({ commit }) {
+			teardownSessionListener();
+			commit("setPlaySession", undefined);
+			commit("setSessionScroll", null);
+			return Promise.resolve();
+		},
 
-					firebase
-						.database()
-						.ref("users/" + getters.getUser.uid + "/playSession")
-						.remove()
-						.then(() => { resolve() })
-						.catch((e) => reject(e));							 
-						
-				} else {
-					reject("User not logged in");
-				}
-			});
+		publishSessionScroll({ getters }, { sessionId, anchor }) {
+			if (!getters.getUserLogged) return;
+			firebase
+				.database()
+				.ref("sessionScroll/" + sessionId)
+				.set(anchor)
+				.catch((e) => {
+					console.log(e);
+				});
+		},
+
+		stopPlaySession({ getters }, sessionId) {
+			if (!getters.getUserLogged) return Promise.reject(new Error("User not logged in"));
+			const updates = {
+				["playSessions/" + sessionId + "/status"]: "ended",
+				["playSessions/" + sessionId + "/endedAt"]: firebase.database.ServerValue.TIMESTAMP,
+				["playSessions/" + sessionId + "/currentSong"]: null,
+				["users/" + getters.getUser.uid + "/activeSessionId"]: null,
+			};
+			// scroll cleanup stays outside the atomic update: it is best-effort
+			// and must not be able to block the session from ending
+			firebase.database().ref("sessionScroll/" + sessionId).remove().catch(() => {});
+			return firebase.database().ref().update(updates);
+		},
+
+		clearActiveSessionPointer({ getters }) {
+			if (!getters.getUserLogged) return Promise.resolve();
+			return firebase
+				.database()
+				.ref("users/" + getters.getUser.uid + "/activeSessionId")
+				.remove()
+				.catch((e) => {
+					console.log(e);
+				});
 		},
 
 		addSong({ dispatch, getters }, payload) {
