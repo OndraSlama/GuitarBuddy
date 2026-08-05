@@ -29,9 +29,11 @@ firebase.initializeApp({
 });
 
 // App Check backs the AI Logic calls (enforced for that API). The reCAPTCHA
-// site key is public; without it App Check simply stays off. For localhost,
-// set VITE_APPCHECK_DEBUG_TOKEN to a debug token registered in the console.
-const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY;
+// site key is public (like the firebase config above), so it is baked in and
+// builds work without any .env; the env var stays as an override. For
+// localhost, set VITE_APPCHECK_DEBUG_TOKEN to a debug token registered in
+// the console - that one is a secret and must never be committed.
+const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY || "6Ld1b3ctAAAAAF-__c43lsdjZORLzwa-_YplAbNK";
 if (appCheckSiteKey) {
 	if (import.meta.env.DEV && import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) {
 		self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
