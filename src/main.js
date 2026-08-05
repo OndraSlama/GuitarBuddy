@@ -7,6 +7,8 @@ import insomnia from "./plugins/insomnia";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import "firebase/compat/database";
+import { getApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import GeneralDialog from "./components/Dialogs/GeneralDialog.vue";
 import DeleteDialog from "./components/Dialogs/DeleteDialog.vue";
 import EditPublicSongDialog from "./components/Dialogs/EditPublicSongDialog.vue";
@@ -25,6 +27,20 @@ firebase.initializeApp({
 	appId: "1:267513568910:web:1e1ba1daa7f90ea6fc33df",
 	measurementId: "G-JDZY638NH4",
 });
+
+// App Check backs the AI Logic calls (enforced for that API). The reCAPTCHA
+// site key is public; without it App Check simply stays off. For localhost,
+// set VITE_APPCHECK_DEBUG_TOKEN to a debug token registered in the console.
+const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY;
+if (appCheckSiteKey) {
+	if (import.meta.env.DEV && import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) {
+		self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+	}
+	initializeAppCheck(getApp(), {
+		provider: new ReCaptchaV3Provider(appCheckSiteKey),
+		isTokenAutoRefreshEnabled: true,
+	});
+}
 
 const app = createApp(App);
 

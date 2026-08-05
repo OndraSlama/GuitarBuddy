@@ -4,8 +4,12 @@ node_modules
 
 
 # local env files
+.env
 .env.local
 .env.*.local
+
+# local test data (e.g. photos for scripts/test-photo-extraction.mjs)
+/.local
 
 # Log files
 npm-debug.log*

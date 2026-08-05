@@ -17,7 +17,7 @@
 		"@codemirror/view": "^6.36.5",
 		"@tonaljs/tonal": "^4.2.1",
 		"codemirror": "^6.0.1",
-		"firebase": "^11.6.0",
+		"firebase": "^12.17.1",
 		"jtab": "^1.3.2",
 		"moment": "^2.30.1",
 		"nosleep.js": "^0.12.0",
