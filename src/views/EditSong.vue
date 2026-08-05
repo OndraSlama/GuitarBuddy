@@ -2,21 +2,27 @@
 	<div>
 		<v-skeleton-loader v-show="transitioning || song == null" type="article"></v-skeleton-loader>
 		<v-scroll-x-transition hide-on-leave>
-			<v-row v-if="!transitioning && song !== null">
-				<v-col cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 6" style="position: relative">
-					<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="updateSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="onDelete" v-on:back="$router.push('/song/' + id)" type="edit"></song-editor>
-					<v-btn size="x-large" icon variant="text" color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
-						<v-icon v-if="expanded">mdi-chevron-left</v-icon>
-						<v-icon v-else>mdi-chevron-right</v-icon>
-					</v-btn>
-				</v-col>
-				<v-divider class="hidden-md-and-up"></v-divider>
-				<v-col cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 6">
-					<song-sheet :song="formatedSong" type="editor-view" :expanded="expanded" class="pl-md-6"></song-sheet>
-				</v-col>
-			</v-row>
+			<div v-if="!transitioning && song !== null">
+				<v-tabs v-model="mobileTab" grow density="compact" color="primary" class="hidden-md-and-up mb-2">
+					<v-tab value="edit"><v-icon start>mdi-pencil-outline</v-icon>Edit</v-tab>
+					<v-tab value="preview"><v-icon start>mdi-eye-outline</v-icon>Preview</v-tab>
+				</v-tabs>
+				<v-row>
+					<v-col v-show="viewportSize.mdAndUp || mobileTab === 'edit'" cols="12" :md="expanded ? 8 : 6" :lg="expanded ? 8 : 6" style="position: relative">
+						<song-editor :songSource="song !== undefined ? song.input : undefined" v-on:song-submited="updateSong" v-on:input="formatedSong = $event" v-on:cancel="onCancel" v-on:delete="deleteDialogOpened = true" v-on:back="$router.push('/song/' + id)" type="edit"></song-editor>
+						<v-btn size="x-large" icon variant="text" color="primary" class="resize-button elevation-0 hidden-sm-and-down" @click="expanded = !expanded">
+							<v-icon v-if="expanded">mdi-chevron-left</v-icon>
+							<v-icon v-else>mdi-chevron-right</v-icon>
+						</v-btn>
+					</v-col>
+					<v-col v-show="viewportSize.mdAndUp || mobileTab === 'preview'" cols="12" :md="expanded ? 4 : 6" :lg="expanded ? 4 : 6">
+						<song-sheet :song="formatedSong" type="editor-view" :expanded="expanded" class="pl-md-6"></song-sheet>
+					</v-col>
+				</v-row>
+			</div>
 		</v-scroll-x-transition>
-		<v-snackbar v-model="snackbar"> Song edited </v-snackbar>
+		<delete-dialog v-model="deleteDialogOpened" v-on:accept="onDelete" />
+		<v-snackbar v-model="errorSnackbar" color="error"> {{ errorMessage }} </v-snackbar>
 	</div>
 </template>
 
@@ -30,15 +36,15 @@ export default {
 			transitioning: false,
 			formatedSong: undefined,
 			expanded: false,
-			snackbar: false,
+			mobileTab: "edit",
+			deleteDialogOpened: false,
+			errorSnackbar: false,
+			errorMessage: "",
 		};
 	},
 	methods: {
 		updateSong(songSource) {
-			if (this.formatedSong == undefined) {
-				alert("Undefined formated song");
-				return;
-			}
+			if (this.formatedSong == undefined) return;
 
 			const payload = {
 				id: this.id,
@@ -51,9 +57,13 @@ export default {
 				},
 			};
 
-			this.$store.dispatch("updateSong", payload).then(() => {
-				this.snackbar = true;
-			});
+			this.$store
+				.dispatch("updateSong", payload)
+				.then(() => this.$router.push("/song/" + this.id))
+				.catch(() => {
+					this.errorMessage = "Could not save the changes. Are you signed in?";
+					this.errorSnackbar = true;
+				});
 		},
 
 		onCancel() {

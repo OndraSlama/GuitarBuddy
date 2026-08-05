@@ -6,15 +6,15 @@
             <div v-if="tempSource">
                 <!-- Header Actions -->
                 <div class="d-flex align-center mb-2">
-                     <v-btn icon variant="text" @click="$emit('back')" class="mr-2">
+                     <v-btn icon variant="text" @click="$emit('back')" class="mr-1">
 						<v-icon>mdi-arrow-left</v-icon>
 					</v-btn>
-                    <div class="text-h6 font-weight-bold">
+                    <div class="text-h6 font-weight-bold text-truncate">
                         {{ type === 'add' ? 'New Song' : 'Edit Song' }}
                     </div>
                     <v-spacer></v-spacer>
-                    <div class="d-flex align-center">
-                        <v-switch v-model="tempSource.public" inset density="compact" hide-details class="mt-0 mr-4" label="Public"></v-switch>
+                    <div class="d-flex align-center flex-shrink-0">
+                        <v-switch v-model="tempSource.public" inset density="compact" hide-details class="mt-0 mr-2 mr-sm-4" label="Public"></v-switch>
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props: tooltipProps }">
                                 <v-btn icon variant="text" @click="helpOpened = true" v-bind="tooltipProps">
@@ -71,11 +71,12 @@
                 </v-card>
 
                 <!-- Editor Card -->
-                <v-card variant="outlined" class="rounded-lg d-flex flex-column flex-grow-1 mb-4 elevation-1 border-light" style="min-height: 500px;">
+                <v-card variant="outlined" class="rounded-lg d-flex flex-column flex-grow-1 mb-4 elevation-1 border-light editor-card">
                     <chord-text-editor
                         v-model="tempSource.text"
                         :chords-above-text="tempSource.chordsAboveText"
                         :standard-notation="tempSource.standardNotation"
+                        :trim-lines="tempSource.trimLines"
                         @chord-mode-changed="tempSource.chordsAboveText = $event"
                         @notation-changed="tempSource.standardNotation = $event"
                         @trim-lines-changed="tempSource.trimLines = $event"
@@ -84,12 +85,15 @@
                 </v-card>
 
                 <!-- Footer Actions -->
-                <div class="d-flex align-center pb-4">
+                <div v-if="!userLogged" class="text-caption text-medium-emphasis text-right mb-2">
+                    Sign in to save songs
+                </div>
+                <div class="d-flex align-center flex-wrap pb-4" style="gap: 8px">
                      <v-btn v-if="type === 'edit'" @click="$emit('delete')" color="error" variant="text" size="large">
                         <v-icon start>mdi-delete-outline</v-icon> Delete
 					</v-btn>
                     <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="reset" size="large" class="mr-2">Cancel</v-btn>
+                    <v-btn variant="text" @click="reset" size="large">{{ type === 'add' ? 'Clear' : 'Cancel' }}</v-btn>
                     <v-btn variant="flat" color="primary" type="submit" :disabled="!validInput || !userLogged" size="large">
                          <v-icon start>{{ type === 'add' ? 'mdi-plus' : 'mdi-content-save' }}</v-icon>
                          {{ type === 'add' ? 'Create Song' : 'Save Changes' }}
@@ -102,8 +106,6 @@
 
 <script>
 import { mapGetters } from "vuex";
-import measureText from "../functions/measureText";
-import normalizeText from "../functions/normalizeText";
 import ImageDialog from "../components/Dialogs/ImageDialog.vue";
 import ChordTextEditor from "./ChordTextEditor.vue";
 
@@ -118,6 +120,8 @@ export default {
 			rules: [(value) => !!value || ""],
 			tempSource: undefined,
 			helpOpened: false,
+			dirty: false,
+			syncing: false,
 		};
 	},
 
@@ -145,18 +149,44 @@ export default {
 	},
 
 	methods: {
+		defaultSource() {
+			return {
+				title: "",
+				author: "",
+				text: "",
+				labels: [],
+				chordsAboveText: true,
+				standardNotation: true,
+				trimLines: true,
+				public: true,
+			};
+		},
+
+		// Merge over defaults so songs saved before a setting existed still get
+		// a defined value, and clone so edits never mutate the store object.
+		// Flags are coerced because old records hold 0/1 instead of booleans.
+		sourceCopy() {
+			const copy = { ...this.defaultSource(), ...this.songSource };
+			copy.labels = [...(copy.labels || [])];
+			copy.chordsAboveText = !!copy.chordsAboveText;
+			copy.standardNotation = !!copy.standardNotation;
+			copy.trimLines = !!copy.trimLines;
+			copy.public = !!copy.public;
+			return copy;
+		},
+
+		syncFromSource() {
+			this.syncing = true;
+			this.tempSource = this.sourceCopy();
+			this.standardNotation = this.tempSource.standardNotation;
+			this.$nextTick(() => {
+				this.syncing = false;
+			});
+		},
+
 		reset() {
 			if (this.type === "add") {
-				this.tempSource = {
-					title: "",
-					author: "",
-					text: "",
-					labels: [],
-					chordsAboveText: true,
-					standardNotation: true,
-					trimLines: false,
-					public: true,
-				};
+				this.tempSource = this.defaultSource();
 				this.$refs.form.resetValidation();
 			} else {
 				this.$emit("cancel");
@@ -165,55 +195,6 @@ export default {
 
 		onSubmit() {
 			this.$emit("song-submited", this.tempSource);
-			this.reset();
-		},
-
-		variableToFixed() {
-			let lines = this.tempSource.text.split(/[\n\r]/);
-			lines.forEach((line, index) => {
-				if (this.isChordsLine(line) && index + 1 < lines.length) {
-					let lineParts = line.split(/(\s+)/).filter((e) => e.length > 0);
-					let startPos = [0];
-					let isWord = [];
-					lineParts.forEach((part, j) => {
-						if (j > 0) {
-							startPos.push(startPos[j - 1] + this.relativeTextWidth(lineParts[j - 1]));
-						}
-						isWord.push(part.trim().length > 0);
-					});
-
-					let positionInLine = [];
-					let comparingWord = 0;
-					let cumulativeLength = 0;
-					let i = 0;
-					while (comparingWord < startPos.length) {
-						cumulativeLength += this.relativeTextWidth(lines[index + 1].charAt(i) || " ");
-
-						if (cumulativeLength >= startPos[comparingWord]) {
-							positionInLine.push(i);
-							comparingWord++;
-						}
-						i++;
-					}
-					lines[index] = "";
-					for (let i = 0; i < positionInLine.length; i++) {
-						const pos = positionInLine[i];
-						if (isWord[i]) {
-							lines[index] = lines[index].insert(pos, lineParts[i]);
-						}
-					}
-				}
-			});
-
-			this.tempSource.text = lines.join("\n");
-		},
-
-		fixedToVariable() {
-			console.log("fixed to variable");
-		},
-
-		relativeTextWidth(str) {
-			return measureText(normalizeText(str)) / measureText(" ");
 		},
 
 		fixLabels(labels) {
@@ -248,8 +229,8 @@ export default {
 			return this.tempSource !== undefined && this.tempSource !== null;
 		},
 		validInput() {
-			if (!this.tempSource.title || this.tempSource.title.length == 0) return false;
-			if (!this.tempSource.text || this.tempSource.text.length == 0) return false;
+			if (!this.tempSource.title || this.tempSource.title.trim().length == 0) return false;
+			if (!this.tempSource.text || this.tempSource.text.trim().length == 0) return false;
 			return true;
 		},
 		...mapGetters({
@@ -262,16 +243,19 @@ export default {
 	},
 
 	created() {
-		this.tempSource = { ...this.songSource };
+		this.syncFromSource();
 		this.$emit("input", this.formatedSong);
 		this.$store.dispatch("loadAuthors");
 		this.$store.dispatch("loadLabels");
 	},
 
 	watch: {
+		// Background store updates (firebase child_changed) must not clobber
+		// in-progress edits, so only re-sync while the form is untouched.
 		songSource: {
 			handler: function() {
-				this.tempSource = { ...this.songSource };
+				if (this.dirty) return;
+				this.syncFromSource();
 			},
 			deep: true,
 		},
@@ -281,14 +265,10 @@ export default {
 
 		tempSource: {
 			handler: function() {
-				console.log("song emited");
+				if (!this.syncing) this.dirty = true;
 				this.$emit("input", this.formatedSong);
 			},
 			deep: true,
-		},
-
-		trimLines: function() {
-			this.$emit("input", this.formatedSong);
 		},
 
 		"tempSource.labels": function(newLabels, prevLabels) {
@@ -321,14 +301,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.text-area {
-	font-family: "Roboto Mono", monospace;
-	white-space: pre !important;
-	overflow-wrap: normal !important;
-	overflow: auto;
-	font-size: 12px;
+.editor-card {
+	min-height: 500px;
 }
-.limit-height {
-	max-height: clamp(300px, 55vh, 100vh);
+
+// Fit the editor to the phone viewport so typing does not require scrolling
+// past it; 260px accounts for the app bar, header row, and metadata card.
+@media (max-width: 959.98px) {
+	.editor-card {
+		min-height: max(300px, calc(100dvh - 260px));
+	}
 }
 </style>

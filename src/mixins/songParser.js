@@ -1,4 +1,5 @@
 import { Chord } from "@tonaljs/tonal";
+import { chordRegexString, aloneChordsRegex, chordsInBracketRegex, getWordsInString, isChordsLine } from "../functions/chordLine";
 
 export default {
 	data() {
@@ -246,11 +247,11 @@ export default {
 		},
 
 		getWordsInString(string) {
-			return string.split(/(\s+)/).filter((e) => e.trim().length > 0);
+			return getWordsInString(string);
 		},
 
 		isChordsLine(line) {
-			return (line.match(this.aloneChordsregex) || []).length > (1 / 3) * this.getWordsInString(line).length;
+			return isChordsLine(line);
 		},
 
 
@@ -258,21 +259,16 @@ export default {
 
 	computed: {
 		chordRegexString() {
-			var notes = "[A-H]",
-				accidentals = "(bb|b|#|s|es|ses|sas)?",
-				chords = "(maj|min|m|mi|M|\\+|-|dim|aug|sus)?",
-				suspends = "[0-9]*(sus)?[0-9]*";
-
-			const chord = notes + accidentals + chords + suspends;
-			return chord + "(\\/" + chord + ")?";
+			return chordRegexString;
 		},
 
+		// Computed so exec() loops keep iterating over one cached instance
 		aloneChordsregex() {
-			return RegExp("(?<=(\\b))[\\t]*" + this.chordRegexString + "(?=(\\s|$))", "g");
+			return aloneChordsRegex();
 		},
 
 		chordsInBracketRegex() {
-			return RegExp("(?<=(\\s|,|;|\\[|^))" + this.chordRegexString + "(?=(\\s|,|,;|\\]|$))", "g");
+			return chordsInBracketRegex();
 		},
 	}
 

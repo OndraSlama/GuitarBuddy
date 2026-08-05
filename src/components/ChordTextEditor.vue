@@ -38,7 +38,7 @@
 			<!-- Additional Tools -->
 			<v-tooltip location="bottom">
 				<template v-slot:activator="{ props: tooltipProps }">
-					<v-btn icon size="small" variant="text" @click="trimLines = !trimLines" v-bind="tooltipProps" :color="trimLines ? 'primary' : ''">
+					<v-btn icon size="small" variant="text" @click="trimLinesActive = !trimLinesActive" v-bind="tooltipProps" :color="trimLinesActive ? 'primary' : ''">
 						<v-icon size="small">mdi-format-horizontal-align-left</v-icon>
 					</v-btn>
 				</template>
@@ -87,7 +87,7 @@
 			></codemirror>
 			<div class="editor-helper">
 				<small class="text-medium-emphasis">
-					{{ chordMode === 'brackets' ? 'Type chords in [brackets] like [Am] [F] [C] • Press Ctrl+K (⌘+K) to insert chord brackets' : 'Place chords on separate lines above lyrics' }}
+					{{ helperText }}
 				</small>
 			</div>
 		</div>
@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import songParser from "../mixins/songParser";
+import { aloneChordsRegex, isChordsLine } from "../functions/chordLine";
 import measureText from "../functions/measureText";
 import normalizeText from "../functions/normalizeText";
 import { Codemirror } from "vue-codemirror";
@@ -155,7 +155,6 @@ function chordHighlighter(chordsAbove) {
 
 export default {
 	name: "ChordTextEditor",
-	mixins: [songParser],
 
 	props: {
 		modelValue: {
@@ -169,6 +168,10 @@ export default {
 		standardNotation: {
 			type: Boolean,
 			default: true
+		},
+		trimLines: {
+			type: Boolean,
+			default: true
 		}
 	},
 
@@ -178,13 +181,22 @@ export default {
 		return {
 			chordMode: this.chordsAboveText ? 'above' : 'brackets',
 			notationMode: this.standardNotation ? 'standard' : 'german',
-			trimLines: false,
+			trimLinesActive: this.trimLines,
 			content: this.modelValue,
 			editorView: null
 		};
 	},
 
 	computed: {
+		helperText() {
+			if (this.chordMode !== 'brackets') {
+				return 'Place chords on separate lines above lyrics';
+			}
+			return this.$vuetify.display.smAndDown
+				? 'Type chords in [brackets] like [Am] [F] [C]'
+				: 'Type chords in [brackets] like [Am] [F] [C] • Press Ctrl+K (⌘+K) to insert chord brackets';
+		},
+
 		editorExtensions() {
 			const extensions = [
 				minimalSetup,
@@ -230,8 +242,12 @@ export default {
 			this.$emit('notation-changed', newVal === 'standard');
 		},
 
-		trimLines(newVal) {
+		trimLinesActive(newVal) {
 			this.$emit('trim-lines-changed', newVal);
+		},
+
+		trimLines(newVal) {
+			this.trimLinesActive = newVal;
 		},
 
 		chordsAboveText(newVal) {
@@ -275,7 +291,7 @@ export default {
 			// Implement the chord alignment logic from the original SongEditor
 			let lines = this.content.split(/[\n\r]/);
 			lines.forEach((line, index) => {
-				if (this.isChordsLine(line) && index + 1 < lines.length) {
+				if (isChordsLine(line) && index + 1 < lines.length) {
 					let lineParts = line.split(/(\s+)/).filter((e) => e.length > 0);
 					let startPos = [0];
 					let isWord = [];
@@ -334,7 +350,7 @@ export default {
 			while (i < lines.length) {
 				const currentLine = lines[i];
 
-				if (this.isChordsLine(currentLine) && i + 1 < lines.length) {
+				if (isChordsLine(currentLine) && i + 1 < lines.length) {
 					// This is a chord line, and there's a next line (presumably lyrics)
 					const chordLine = currentLine;
 					const lyricsLine = lines[i + 1] || '';
@@ -342,7 +358,7 @@ export default {
 					// Find all chords and their positions in the chord line
 					const chords = [];
 					let match;
-					const regex = this.aloneChordsregex;
+					const regex = aloneChordsRegex();
 					regex.lastIndex = 0; // Reset regex
 
 					while ((match = regex.exec(chordLine)) !== null) {
@@ -406,10 +422,22 @@ export default {
 .editor-toolbar {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
+	row-gap: 4px;
 	padding: 8px 16px;
 	background: rgba(0, 0, 0, 0.04);
 	border-bottom: 1px solid #eee;
 	min-height: 48px;
+}
+
+@media (max-width: 599.98px) {
+	.editor-toolbar {
+		padding: 6px 8px;
+	}
+
+	.editor-toolbar .v-divider--vertical {
+		display: none;
+	}
 }
 
 .v-theme--dark .editor-toolbar {
